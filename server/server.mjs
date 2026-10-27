@@ -23,6 +23,7 @@ const TYPES = {
   '.woff': 'font/woff', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json',
   '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.map': 'application/json',
 };
+const STARTED_AT = new Date().toISOString(); // health 에 실어 보낸다 — 코드가 이보다 나중에 바뀌었으면 setup 이 재시작
 const SNAPSHOT_MEMO_MS = 1000; // 탭 여러 개가 동시에 물어도 1초에 한 번만 조립
 const MAX_STATIC = 5000;
 const MAX_BODY = 256 * 1024; // 관리자 저장 본문 상한
@@ -211,7 +212,7 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
         const c = loadConfig();
         return sendJson(res, 200, { lang: c.lang, title: c.title, teams: c.teams, layout: c.layout, version: VERSION });
       }
-      if (route === '/api/health') return sendJson(res, 200, { ok: true, app: APP, version: VERSION, demo, pid: process.pid, repo: REPO_DIR });
+      if (route === '/api/health') return sendJson(res, 200, { ok: true, app: APP, version: VERSION, demo, pid: process.pid, repo: REPO_DIR, startedAt: STARTED_AT });
       const abs = files.get(route === '/' ? '/index.html' : route);
       if (!abs) return send(res, 404, 'not found');
       return sendFile(req, res, abs);

@@ -144,7 +144,25 @@ export function isStale(h) {
   if (!h) return false;
   if (h.version !== VERSION) return true;
   if (typeof h.repo !== 'string') return true;            // repo 를 안 알려 주는 옛 버전
-  return pathKey(h.repo) !== pathKey(REPO_DIR);
+  if (pathKey(h.repo) !== pathKey(REPO_DIR)) return true;
+  // 같은 폴더·같은 버전이어도 git pull 로 서버 코드가 바뀌었으면(파일이 서버 시작보다 나중) 옛 프로세스다
+  const started = Date.parse(String(h.startedAt || '')) || 0;
+  return started > 0 && codeMtime() > started + 1000;
+}
+
+/** server/*.mjs 와 hooks/*.mjs 중 가장 최근 수정 시각 */
+export function codeMtime() {
+  let latest = 0;
+  for (const dir of ['server', 'hooks']) {
+    try {
+      for (const f of fs.readdirSync(`${REPO_DIR}/${dir}`)) {
+        if (!f.endsWith('.mjs')) continue;
+        const m = fs.statSync(`${REPO_DIR}/${dir}/${f}`).mtimeMs;
+        if (m > latest) latest = m;
+      }
+    } catch { /* 폴더가 없으면 건너뜀 */ }
+  }
+  return latest;
 }
 
 /** 서버 끄기 — health 가 알려 준 pid 만 죽인다(남의 프로세스를 죽이지 않게) */
