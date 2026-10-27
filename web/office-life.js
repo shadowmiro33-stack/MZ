@@ -89,10 +89,19 @@ const OfficeLife = (() => {
     || [...L.taken].some(([k, who]) => who !== me?.id && spotAt(k) && dist(spotAt(k), pt) < 34)
     // 회의실 의자를 일자리로 배정받은 사람(승인 대기로 잠깐 일어난 사이에도 그 의자는 그 사람 것)
     || [...L.desks].some(([n, k]) => k < 0 && n !== me?.id && dist(sitAt(OFFICE_OVERFLOW[-1 - k].seat, SIT_DESK), pt) < 34);
+  // 자리 고르기 — 우리 팀 방의 자리 > 공용 자리 > 아무 자리
+  const teamOf = p => p.team || "";
+  const preferTeam = (list, idx, p) => {
+    const mine = idx.filter(i => list[i].team !== undefined && list[i].team === teamOf(p));
+    if (mine.length) return mine;
+    const shared = idx.filter(i => !list[i].team);
+    return shared.length ? shared : idx;
+  };
   function takeSpot(p, kind) {
     const list = OFFICE_SPOTS[kind] || [];
-    const free = list.map((s, i) => i).filter(i => !L.taken.has(`${kind}:${i}`) && !occupied(list[i].at, p));
+    let free = list.map((s, i) => i).filter(i => !L.taken.has(`${kind}:${i}`) && !occupied(list[i].at, p));
     if (!free.length) return null;
+    free = preferTeam(list, free, p);
     const i = pick(free);
     L.taken.set(`${kind}:${i}`, p.id);
     return list[i];
@@ -118,7 +127,7 @@ const OfficeLife = (() => {
     if (cur === undefined || (cur >= 0 && !deskOk(cur, p)) || lost) {
       const taken = [...L.desks].filter(([n]) => n !== p.id).map(([, k]) => k);
       const seats = taken.filter(k => k >= 0).map(k => OFFICE_DESKS[k].seat);
-      const cands = OFFICE_DESKS.map((_, i) => i).filter(i => !taken.includes(i) && deskOk(i, p))
+      const cands = preferTeam(OFFICE_DESKS, OFFICE_DESKS.map((_, i) => i).filter(i => !taken.includes(i) && deskOk(i, p)), p)
         .map(i => ({ i, far: Math.min(260, ...seats.map(q => dist(q, OFFICE_DESKS[i].seat)))
                              - 0.35 * dist([p.x, p.y], OFFICE_DESKS[i].seat) }))   // 남과 떨어지되 너무 멀리 걷지 않게
         .sort((a, b) => b.far - a.far);
@@ -411,7 +420,8 @@ const OfficeLife = (() => {
 
   // ---------- 데이터가 오면 들이고 내보낸다 ----------
   // list = [{ id, name, status, ask, kid, home, doing(글), subCount, subs:[{id,type,desc,doing(글)}], commits, path }]
-  const START_NODES = ["inner", "la1", "B1", "B2", "C1", "C2", "A2", "A3", "ra2", "ra3"];
+  // 첫 화면에 세워 둘 통로 점 — 복도 점들(지도가 바뀌어도 이름 규칙은 같다: office-world.js)
+  const startNodes = () => Object.keys(OFFICE_NODES).filter(k => k === "inner" || /^h\d/.test(k));
   function sync(list) {
     const seen = new Set();
     for (const d of list) {
@@ -438,7 +448,7 @@ const OfficeLife = (() => {
         } else {                                     // 첫 화면 — 통로 점 하나에 세워 두고 할 일 자리로 바로 놓는다.
           // (0,0)에서 시작하면 걷기 없는 첫 할 일(기지개·빈자리 없음)일 때 그림 왼쪽 위 바깥에 서 있다가
           // 거기서 벽을 넘어 걸어 들어왔다
-          [p.x, p.y] = OFFICE_NODES[pick(START_NODES)];
+          [p.x, p.y] = OFFICE_NODES[pick(startNodes())] || OFFICE_NODES.inner;
           choose(p); snap(p);
         }
       } else if (back) {
@@ -467,6 +477,12 @@ const OfficeLife = (() => {
       for (const m of L.minis.values()) if (m.owner === p.id) miniLeave(m, 0);
     }
     L.synced = true;
+  }
+
+  // 지도가 바뀌었다(팀 추가 등) — 모두 내보내고 다음 sync 에서 새 자리로 바로 놓는다
+  function reset() {
+    L.people.clear(); L.minis.clear(); L.desks.clear(); L.taken.clear(); L.chats.clear(); L.greeted.clear();
+    L.synced = false;
   }
 
   function syncMinis(p, d) {
@@ -591,6 +607,6 @@ const OfficeLife = (() => {
     }
   }
 
-  return { L, SIT_DESK, sync, update, cut, nearest, route, colorOf, speciesOf, colorFor, speciesFor, modeOf, blocked, onFloor,
+  return { L, SIT_DESK, sync, reset, update, cut, nearest, route, colorOf, speciesOf, colorFor, speciesFor, modeOf, blocked, onFloor,
            drainEvents: () => L.events.splice(0, L.events.length) };
 })();

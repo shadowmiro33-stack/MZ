@@ -11,8 +11,20 @@ const OfficePath = (() => {
     const d1 = orient(q1, q2, p1), d2 = orient(q1, q2, p2), d3 = orient(p1, p2, q1), d4 = orient(p1, p2, q2);
     return ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0)) && d1 !== 0 && d2 !== 0;
   }
-  const EDGES = [...OFFICE_WALLS, ...OFFICE_BLOCKS.flatMap(poly => poly.map((pt, i) => [pt, poly[(i + 1) % poly.length]]))];
-  const blocked = (a, b) => EDGES.some(([q1, q2]) => cross(a, b, q1, q2));
+  // 지도는 build 할 때마다 바뀐다(OFFICE_VERSION) — 벽 목록·통로 그래프는 그때 다시 만든다
+  let built = -1, EDGES = [], ADJ = {};
+  function refresh() {
+    if (built === OFFICE_VERSION) return;
+    built = OFFICE_VERSION;
+    EDGES = [...OFFICE_WALLS, ...OFFICE_BLOCKS.flatMap(poly => poly.map((pt, i) => [pt, poly[(i + 1) % poly.length]]))];
+    ADJ = {};
+    for (const [a, b] of OFFICE_EDGES) {
+      const d = dist(OFFICE_NODES[a], OFFICE_NODES[b]);
+      (ADJ[a] ||= []).push([b, d]);
+      (ADJ[b] ||= []).push([a, d]);
+    }
+  }
+  const blocked = (a, b) => { refresh(); return EDGES.some(([q1, q2]) => cross(a, b, q1, q2)); };
   function inPoly([x, y], poly) {
     let inside = false;
     for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -26,13 +38,8 @@ const OfficePath = (() => {
   const canMove = (a, b) => onFloor(b) && !blocked(a, b);
 
   // ---------- 길 찾기 — 통로 점을 잇는 최단 경로 ----------
-  const ADJ = {};
-  for (const [a, b] of OFFICE_EDGES) {
-    const d = dist(OFFICE_NODES[a], OFFICE_NODES[b]);
-    (ADJ[a] ||= []).push([b, d]);
-    (ADJ[b] ||= []).push([a, d]);
-  }
   function nearest(pt) {                    // 벽 너머의 점은 아무리 가까워도 고르지 않는다
+    refresh();
     let best = null, bd = Infinity, any = null, ad = Infinity;
     for (const [k, p] of Object.entries(OFFICE_NODES)) {
       const d = dist(p, pt);
@@ -42,6 +49,7 @@ const OfficePath = (() => {
     return best || any;
   }
   function nodePath(a, b) {
+    refresh();
     const d = { [a]: 0 }, prev = {}, todo = new Set(Object.keys(OFFICE_NODES));
     while (todo.size) {
       let u = null;
@@ -80,9 +88,13 @@ function officeMotion(L, SIT_DESK) {
   // 하나 끼운다(좌우 번갈아). 마지막 점(앉을 자리)인데 6초 넘게 못 가면 그 자리로 옮겨 놓는다.
   const UNSTICK_S = 1, UNSTICK_JUMP = 6;
   // 지름길이 남의 의자 곁(앉는 점 22픽셀 안)을 지나는가 — 의자는 벽이 아니라서 따로 본다(목적지 의자는 빼고)
-  const SEATS = (OFFICE_ATLAS.chairs || []).map(c => [c.seat[0], c.seat[1] + SIT_DESK]);
+  let seatsV = -1, SEATS = [];
+  const seats = () => {
+    if (seatsV !== OFFICE_VERSION) { seatsV = OFFICE_VERSION; SEATS = (OFFICE_ATLAS.chairs || []).map(c => [c.seat[0], c.seat[1] + SIT_DESK]); }
+    return SEATS;
+  };
   // 출발점 바로 곁(30픽셀 안)의 의자는 뺀다 — 방금 일어난 자기 의자에서 멀어지는 걸음까지 막으면 못 움직인다
-  const nearChair = (a, b, goal) => SEATS.some(q => dist(q, goal) > 4 && dist(q, a) > 30 && segDist(q, a, b) < 22);
+  const nearChair = (a, b, goal) => seats().some(q => dist(q, goal) > 4 && dist(q, a) > 30 && segDist(q, a, b) < 22);
   function unstick(e, d) {
     const to = e.path[0], g = e.prog;
     if (!g || g.to !== to) { e.prog = { to, best: d, t: L.t, side: g?.side || 1, stuck: g?.stuck || 0 }; return; }

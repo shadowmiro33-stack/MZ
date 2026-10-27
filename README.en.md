@@ -144,7 +144,7 @@ No. If the server isn't running when a Claude session starts, the hook starts it
 Click **⚙ Admin** at the top right of the office (or open `http://127.0.0.1:4777/admin.html`). No terminal needed: edit in the browser, press **Save**, and the office picks it up within 3 seconds.
 
 - **Office name** — the title in the top bar.
-- **Teams** — name and color; a team's color becomes its members' hat and cardigan color.
+- **Teams** — name and color. Every team gets **its own room** (add a team, get a room); the color tints that room, its sofa and its members' hats and cardigans. Members sit at their own room's desks and rest on their own sofa first. Projects without a team go to the 'Common' room.
 - **Staff** — per project folder: display name (name tag), title (shown small next to the name), team, character (frog/capybara), seat (desk/server room), color, hide. Click a chip under "In the office right now" to add that project.
 
 You can also tell Claude `open admin mode`, or run `npm run admin`. Admin mode edits the config file below, so hand-editing works too.

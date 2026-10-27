@@ -60,7 +60,7 @@
   function loadImages() {
     if (st.imgs) return;
     st.imgs = {};
-    const names = ["floor", "chairs", ...SHEETS.flatMap(s => [s, s + "-key"])];
+    const names = SHEETS.flatMap(s => [s, s + "-key"]);      // 바닥·가구·의자는 코드로 그린다(office-draw.js)
     let left = names.length;
     for (const n of names) {
       const img = new Image();
@@ -346,12 +346,15 @@
     if (!st.loaded) return;
     ctx.setTransform(v.s * v.dpr, 0, 0, v.s * v.dpr, v.ox * v.dpr, v.oy * v.dpr);
     ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(st.imgs.floor, 0, 0, OFFICE_W, OFFICE_H);
+    OfficeDraw.floor(ctx);
+    OfficeDraw.walls(ctx);
+    for (const f of OFFICE_FURNITURE) if (f.kind !== "plant") OfficeDraw.furniture(ctx, f);   // 책상·소파 = 사람 뒤
     drawRing(ctx, false);
     // 깊이 순서(발끝 y)대로 — 책상·회의실 의자 등받이도 끼워 넣는다: 앉은 사람(발끝 = 등받이 아래끝 - 2)보다 나중,
-    // 의자 앞 통로를 지나는 사람보다 먼저. 그래서 앉은 사람은 허리 아래가 등받이에 가려진다.
-    const all = [...L.people.values(), ...L.minis.values(), ...CHAIRS].sort((a, b) => a.y - b.y);
-    for (const e of all) (e.chair ? drawChair : e.owner ? drawMini : drawPerson)(ctx, e);
+    // 의자 앞 통로를 지나는 사람보다 먼저. 그래서 앉은 사람은 허리 아래가 등받이에 가려진다. 화분도 깊이 순으로.
+    const plants = OFFICE_FURNITURE.filter(f => f.kind === "plant").map(f => ({ plant: f, y: f.y }));
+    const all = [...L.people.values(), ...L.minis.values(), ...chairs(), ...plants].sort((a, b) => a.y - b.y);
+    for (const e of all) (e.chair ? drawChair : e.plant ? drawPlant : e.owner ? drawMini : drawPerson)(ctx, e);
     drawRing(ctx, true);
     if (DEBUG) debugMarks(ctx);
     ctx.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);    // 글씨는 화면 좌표로 — 사무실을 줄여도 크기 그대로
@@ -373,11 +376,14 @@
       }
     }
   }
-  const CHAIRS = (A.chairs || []).map(c => ({ chair: c.box, y: c.seat[1] + OfficeLife.SIT_DESK + 1 }));
-  function drawChair(ctx, c) {
-    const [x, y, w, h] = c.chair;
-    ctx.drawImage(st.imgs.chairs, x, y, w, h, x, y, w, h);
+  // 의자 등받이 목록 — 지도가 바뀌면 다시 만든다
+  let chairsV = -1, CHAIRS = [];
+  function chairs() {
+    if (chairsV !== OFFICE_VERSION) { chairsV = OFFICE_VERSION; CHAIRS = (A.chairs || []).map(c => ({ chair: c, y: c.seat[1] + OfficeLife.SIT_DESK + 1 })); }
+    return CHAIRS;
   }
+  const drawChair = (ctx, c) => OfficeDraw.chair(ctx, c.chair);
+  const drawPlant = (ctx, e) => OfficeDraw.furniture(ctx, e.plant);
   function particles() {
     const t = L.t;
     for (const p of L.people.values()) {
@@ -438,8 +444,29 @@
     doing: I18N.act(d.doing), subCount: d.subCount || 0,
     subs: d.subs.map(s => ({ id: String(s.id), type: s.type || "", desc: s.desc || "", doing: I18N.act(s.doing) })),
   });
+  // 지도 — 설정의 팀 목록으로 만든다. 팀이 바뀌면(관리자 저장) 다시 만들고 모두 새 자리로 보낸다
+  let worldKey = null;
+  function buildWorld(cfg) {
+    const teams = OfficeWorld.teamsFromConfig(cfg);
+    const k = OfficeWorld.key(teams);
+    if (k === worldKey) return false;
+    worldKey = k;
+    OfficeWorld.build(teams);
+    OfficeLife.reset();
+    st.sel = null;
+    layout();
+    return true;
+  }
+  async function loadConfig() {
+    try {
+      const res = await fetch("/api/config", { cache: "no-store" });
+      if (res.ok) buildWorld(await res.json());
+    } catch { /* 설정을 못 읽으면 지금 지도 그대로 */ }
+  }
   async function load() {
     if (document.hidden) return;
+    await loadConfig();
+    if (worldKey === null) buildWorld({});                             // 설정을 못 읽었다 — 팀 없는 기본 사무실
     try {
       const res = await fetch("/api/office", { cache: "no-store" });
       if (!res.ok) throw new Error(String(res.status));
@@ -532,6 +559,7 @@
     new ResizeObserver(layout).observe($("office-box"));
     document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
     loadImages();
+    buildWorld({});                                                    // 설정이 오기 전에도 빈 사무실은 그려 둔다
     layout();
     bar();
     load();

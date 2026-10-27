@@ -13,7 +13,7 @@ Claude Code 세션 하나하나를 사무실 캐릭터(개구리·카피바라)�
 | `scripts/*.mjs` | 백엔드 | setup(적용)·start·stop·status(doctor)·uninstall |
 | `test/*.test.mjs` | 백엔드 | `node --test` 단위 시험 |
 | `package.json` | 백엔드 | 의존성 없음. scripts: setup, start, stop, status, uninstall, demo, test |
-| `web/*` | 화면 | 정적 화면(index.html·style.css·i18n.js·office-*.js·office/*.webp) + 관리자 모드(admin.html·admin.js·admin.css) |
+| `web/*` | 화면 | 정적 화면(index.html·style.css·i18n.js·office-*.js·office/*.webp) + 관리자 모드(admin.html·admin.js·admin.css). 사무실 지도는 그림이 아니라 `office-world.js` 가 팀 목록으로 생성하고 `office-draw.js` 가 그린다(팀마다 방 하나 + 공용 방 + 회의실·서버실·탕비실·라운지) |
 | `README*.md`, `CLAUDE.md`, `docs/*` | 문서 | 사용 설명·구조·스프라이트 교체 |
 
 

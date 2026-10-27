@@ -1,128 +1,18 @@
 "use strict";
-// 사무실 지도. 좌표는 전부 사무실 그림(office/floor.webp, 1536×1024) 픽셀 기준이다.
-// 구역: 서재·라운지(유리벽)·탕비실·유리 회의실·서버실·개발석 11자리·안내데스크·출입문.
-// 좌표는 그림 위에 점을 찍어 확대해 보며 하나씩 맞췄다 — 그림을 바꾸면 여기를 다시 잰다
-// (주소 뒤 ?debug 를 붙이면 통로·자리·벽이 점과 선으로 보인다).
-// 대사·화면 문구는 i18n.js, 길 찾기·충돌은 office-path.js.
+// 사무실 지도 — 팀 목록으로 자동 생성한다(OfficeWorld.build). 그림 파일이 아니라 코드로 그린 아이소메트릭 사무실이라
+// 관리자 모드에서 팀을 더하면 방이 하나 늘어난다. 좌표는 전부 '사무실 픽셀'(화면이 한 번 더 줄여 그린다).
+//
+// 평면(격자 단위 u·v → iso): 위쪽 줄 = 팀 방들(팀마다 하나 + 팀 없는 사람의 '공용' 방), 가운데 = 복도(출입문은 왼쪽 끝),
+// 아래 줄 = 공용 시설(탕비실·라운지·회의실·서버실).
+// 대사·화면 문구는 i18n.js, 길 찾기·충돌은 office-path.js, 그리기는 office-view.js(drawFloor).
+//
+// 아래 전역 이름은 다른 파일이 그대로 쓰므로 build() 가 값만 바꿔 끼운다(let).
 
-const OFFICE_W = 1536, OFFICE_H = 1024;
-
-// 통로 — 캐릭터는 이 점들을 이어 걷는다. 유리벽은 문 자리(lgdoor·mdoor·srvdoor)로만 지난다.
-const OFFICE_NODES = {
-  out: [380, 830], door: [450, 792], inner: [522, 748],
-  la1: [535, 650], la2: [548, 545], la3: [522, 440],
-  ta1: [585, 352], ta2: [725, 352], ta3: [872, 366], ta4: [1010, 384], ta5: [1150, 418],
-  lgdoor: [541, 378], lounge: [495, 382],                     // 라운지 유리문(탕비실 쪽 유리벽 끝)
-  lgS: [420, 398], lgW: [292, 392], rug: [448, 330],          // 라운지 커피테이블을 돌아가는 점
-  pan: [758, 300], pan2: [850, 318],                           // 탕비실 — 탁자 사이 빈 바닥
-  mfront: [968, 336], mdoor: [976, 299], mtg: [1015, 292], mtgF: [1108, 346], mtgF2: [1212, 362],
-  mtgR: [1288, 302],                                           // 회의실 — 탁자 앞쪽으로 돌아 오른쪽 끝까지
-  ra1: [1215, 470], ra2: [1190, 570], ra3: [1160, 680], ra4: [1080, 800],
-  srvdoor: [1277, 562], srv: [1318, 548],                      // 서버실 유리문(왼쪽 짧은 면)
-  A0: [566, 474],                                              // 왼쪽 통로 → A 통로 입구(4번 책상 위를 가로지르지 않게)
-  A1: [690, 490], A2: [825, 508], A3: [960, 528], A4: [1100, 545],
-  B1: [612, 600], B2: [760, 622], B3: [905, 645], B4: [1060, 668],
-  C1: [742, 780], C2: [845, 805], C3: [990, 830],
-};
-const OFFICE_EDGES = [
-  ["out", "door"], ["door", "inner"], ["inner", "la1"], ["la1", "la2"], ["la2", "la3"], ["la3", "ta1"],
-  ["ta1", "ta2"], ["ta2", "ta3"], ["ta3", "ta4"], ["ta4", "ta5"], ["ta5", "ra1"], ["ra1", "ra2"],
-  ["ra2", "ra3"], ["ra3", "ra4"], ["ta1", "lgdoor"], ["lgdoor", "lounge"], ["lounge", "lgS"],
-  ["lgS", "lgW"], ["lounge", "rug"],
-  ["ta2", "pan"], ["pan", "pan2"], ["ta3", "pan2"], ["ta3", "mfront"], ["ta4", "mfront"],
-  ["mfront", "mdoor"], ["mdoor", "mtg"], ["mtg", "mtgF"], ["mtgF", "mtgF2"], ["mtgF2", "mtgR"], ["ra2", "srvdoor"], ["srvdoor", "srv"],
-  ["la3", "A0"], ["A0", "A1"], ["A1", "A2"], ["A2", "A3"], ["A3", "A4"], ["A4", "ra1"], ["A4", "ra2"],
-  ["la1", "B1"], ["B1", "B2"], ["B2", "B3"], ["B3", "B4"], ["B4", "ra2"], ["B4", "ra3"],
-  ["inner", "C1"], ["C1", "C2"], ["C2", "C3"], ["C3", "ra4"],
-];
-
-// 벽 — 바닥에 닿는 선(유리벽·책장). 걷기도, 서로 밀어내기도 이 선을 못 넘는다.
-// 문은 선을 끊어 둔 자리다: 라운지 527~553, 회의실 947~1005 사선, 서버실 1252~1302 짧은 면.
-// 서재는 사방이 막혀 출입구가 안 보여 들어가지 않는다(안락의자는 장식).
-const OFFICE_WALLS = [
-  [[290, 463], [553, 390]],      // 라운지 앞 유리벽
-  [[413, 262], [527, 365]],      // 라운지↔탕비실 유리벽
-  [[287, 575], [363, 637]],      // 서재 유리벽
-  [[290, 463], [287, 575]],      // 서재 위 책장 끝
-  [[925, 120], [947, 282]],      // 탕비실↔회의실 유리벽
-  [[1005, 315], [1250, 460]],    // 회의실 앞 유리벽
-  [[1250, 460], [1400, 385]],    // 회의실↔서버실
-  [[1250, 460], [1252, 548]],    // 서버실 왼쪽 모서리
-  [[1302, 572], [1398, 654]],    // 서버실 앞 유리벽
-];
-// 가구 — 사람이 뚫고 지나가면 안 되는 덩어리(탕비실 둥근 탁자 둘·라운지 커피테이블·회의 탁자·안내데스크).
-// 벽과 똑같이 막는다: 이 둘레를 가로질러 걷거나 밀려 들어가지 않는다. 의자에는 앞쪽 통로에서 들어간다.
-function officeRing(cx, cy, rx, ry) {
-  return Array.from({ length: 10 }, (_, i) => [cx + rx * Math.cos(i * Math.PI / 5), cy + ry * Math.sin(i * Math.PI / 5)]);
-}
-const OFFICE_BLOCKS = [
-  officeRing(683, 256, 50, 32),                              // 탕비실 탁자 A(+뒤쪽 의자)
-  officeRing(847, 220, 50, 32),                              // 탕비실 탁자 B
-  officeRing(368, 352, 58, 24),                              // 라운지 커피테이블
-  [[1046, 248], [1120, 221], [1252, 300], [1192, 329]],      // 회의 탁자
-  [[548, 770], [726, 795], [726, 905], [548, 880]],          // 안내데스크
-];
-// 바닥 — 이 안에서만 움직인다(밀려도 바닥 밖으로 안 나간다)
-const OFFICE_FLOOR = [
-  [200, 300], [413, 250], [515, 258], [800, 232], [925, 250], [1000, 190], [1300, 290], [1400, 385],
-  [1500, 585], [845, 966], [447, 850], [355, 845], [335, 785], [365, 640], [287, 575], [290, 463], [180, 430],
-];
-
-// 일하는 자리 — 모니터 앞 의자. seat = 앉은 그림의 발끝보다 18 위, 발끝 = 등받이 아래 끝 - 2.
-// 숫자는 office-atlas.js chairs[].seat 와 같아야 한다 — 화면은 앉은 사람 위에 그 등받이를 덧그려
-// 허리 아래를 가린다(앉은 것처럼 보이게).
-// via = 의자 앞 통로 점, row = 같은 줄(서브에이전트는 오른쪽 옆자리 쪽으로 줄 선다 — 그 자리는 비워 둔다).
-const OFFICE_DESKS = [
-  { seat: [657, 429], via: "A1", row: 1 }, { seat: [787, 449], via: "A2", row: 1 },
-  { seat: [919, 468], via: "A3", row: 1 }, { seat: [1052, 489], via: "A4", row: 1 },
-  { seat: [591, 546], via: "B1", row: 2 }, { seat: [733, 570], via: "B2", row: 2 },
-  { seat: [880, 596], via: "B3", row: 2 }, { seat: [1027, 621], via: "B4", row: 2 },
-  { seat: [638, 708], via: "C1", row: 3 }, { seat: [788, 739], via: "C2", row: 3 },
-  { seat: [940, 768], via: "C3", row: 3 },
-];
-// 자리가 모자라면 — 회의실 앞줄 의자에 앉아(등을 보이고) 일한다. chair = office-atlas.js chairs 번호(등받이 덧그림)
-const OFFICE_OVERFLOW = [
-  { seat: [1062, 274], via: "mtg", chair: 11 }, { seat: [1154, 326], via: "mtgF", chair: 13 },
-  { seat: [1109, 300], via: "mtgF", chair: 12 },               // 가운데는 마지막 — 양옆과 등이 겹친다
-];
-
-// 쉬는 자리. face = 보는 쪽(-1 왼쪽, 1 오른쪽).
-const OFFICE_SPOTS = {
-  sofa: [
-    { at: [290, 320], via: "lgW", face: 1 }, { at: [370, 302], via: "rug", face: -1 },
-    { at: [232, 386], via: "lgW", face: 1 },                  // 옆 소파는 한 자리만 — 둘이면 겹쳐 보인다
-  ],
-  coffee: [{ at: [612, 258], via: "ta1", face: -1 }, { at: [565, 274], via: "ta1", face: -1 }],
-  cafe: [                                   // 탕비실 둥근 탁자 앞쪽 의자
-    { at: [640, 294], via: "ta1", face: 1 }, { at: [700, 304], via: "ta2", face: -1 },
-    { at: [800, 254], via: "pan", face: 1 }, { at: [893, 267], via: "pan2", face: -1 },
-  ],
-  meeting: [{ at: [1062, 274], via: "mtg", face: 1, chair: 11 }, { at: [1154, 326], via: "mtgF", face: 1, chair: 13 }],
-                                                              // 이웃 의자는 하나 건너 — 등이 겹치지 않게
-  board: [{ at: [1213, 262], via: "mtgR", face: 1 }],   // 탁자 오른쪽 끝을 돌아 화이트보드 앞
-  server: [{ at: [1335, 566], via: "srv", face: 1 }],       // 서버실 안, 랙 앞
-  stroll: [
-    { at: [560, 690], via: "la1" }, { at: [1100, 760], via: "ra4" }, { at: [1205, 650], via: "ra2" },
-    { at: [830, 880], via: "C2" }, { at: [1150, 446], via: "ta5" },
-  ],
-};
-// 특별 자리 — Person.home 값으로 고른다. "server" = 서버실 랙 앞에 서서 일하고(등을 보이고),
-// 쉴 때도 rest 비율만큼 그 방에 머문다. queue = 서브에이전트가 줄 서는 방향.
-const OFFICE_HOMES = {
-  server: { work: { at: [1335, 566], via: "srv", face: 1 }, rest: 0.75, queue: -1 },
-};
-
-// 수다 자리 — 두세 명이 둘러선다. sit = 앉아서 떠드는 자리(탕비실 탁자).
-const OFFICE_CHATS = [
-  { pts: [[1158, 454], [1220, 472]], via: "ta5" },
-  { pts: [[1110, 700], [1176, 690]], via: "ra3" },
-  { pts: [[1236, 600], [1300, 614]], via: "ra2" },
-  { pts: [[796, 884], [862, 894]], via: "C2" },
-  { pts: [[1075, 332], [1160, 356], [1248, 342]], via: "mtg" },
-  { pts: [[640, 294], [700, 304]], via: "ta2", sit: true },
-  { pts: [[800, 254], [893, 267]], via: "pan2", sit: true },
-  { pts: [[290, 320], [370, 302]], vias: ["lgW", "rug"], sit: true },   // 커피테이블 양쪽으로 돌아 앉는다
-];
+let OFFICE_W = 1536, OFFICE_H = 1024;
+let OFFICE_NODES = {}, OFFICE_EDGES = [], OFFICE_WALLS = [], OFFICE_BLOCKS = [], OFFICE_FLOOR = [];
+let OFFICE_DESKS = [], OFFICE_OVERFLOW = [], OFFICE_SPOTS = {}, OFFICE_HOMES = {}, OFFICE_CHATS = [];
+let OFFICE_ROOMS = [], OFFICE_FURNITURE = [], OFFICE_LABELS = [];   // 그리기용 — 방·가구·바닥 글씨
+let OFFICE_VERSION = 0;                                              // build 할 때마다 +1 (길 찾기 캐시 갱신)
 
 // 캐릭터 종류 — 시트 이름 앞머리(web/office/<종>*.webp). AUTO = 명부에 종류가 없을 때 이름으로 고르는 후보(강아지 품종).
 // 새 품종을 더하면 tools/sprites/dog.py 로 시트를 만들고 여기와 server/config.mjs KINDS·admin.js 에 같이 적는다.
@@ -137,3 +27,198 @@ const OFFICE_COLORS = [
   "#E74C3C", "#E67E22", "#F1C40F", "#27AE60", "#16A085", "#2E86DE", "#3742FA", "#8E44AD",
   "#E84393", "#8D6E63", "#2C3E50", "#00B8D4", "#7CB342", "#FF7043", "#5F27CD", "#C0392B",
 ];
+
+const OfficeWorld = (() => {
+  // 격자 한 칸: 가로 반폭 TX, 세로 반높이 TY (iso 2:1)
+  const TX = 54, TY = 27;
+  const WALL_H = 86;                 // 벽 높이(픽셀) — 그리기용
+  const SIT = 18;                    // 의자 앉는 점 → 앉은 그림 발끝(office-life SIT_DESK 와 같다)
+  let ORG = [0, 0];                  // iso 원점(화면) — build 가 정한다
+  let SIZE = { U: 0, V: 0 };         // 건물 크기(격자)
+  const iso = (u, v) => [ORG[0] + (u - v) * TX, ORG[1] + (u + v) * TY];
+  const uv = ([x, y]) => [((x - ORG[0]) / TX + (y - ORG[1]) / TY) / 2, ((y - ORG[1]) / TY - (x - ORG[0]) / TX) / 2];
+  const rect = (u0, v0, u1, v1) => [iso(u0, v0), iso(u1, v0), iso(u1, v1), iso(u0, v1)];
+
+  // 방 크기(격자 단위)
+  const ROOM_V = 8;                  // 팀 방 깊이
+  const HALL_V = 3;                  // 복도 폭
+  const DESK_U = 3;                  // 책상 간격
+  const COMMON = "__common__";       // 팀 없는 사람의 방
+
+  /** teams = [{ name, color, size }] (size = 명부에 있는 인원). 돌려주는 값 = 요약(방 수·크기) */
+  /** teams = [{ name, color, size }] (size = 명부에 있는 인원). 돌려주는 값 = 요약(방 수·크기) */
+  function build(teams) {
+    OFFICE_VERSION++;
+    const list = [...teams.map(t => ({ ...t })), { name: COMMON, color: "#9AA5B1", size: 0, common: true }];
+    for (const t of list) t.desks = Math.max(3, Math.min(6, (t.size || 0) + 1));
+    for (const t of list) t.ru = t.desks * DESK_U + 2;                   // 방 너비(u)
+
+    // 복도 위쪽(v 0..ROOM_V): 회의실·서버실 + 짝수 번째 팀 방. 아래쪽: 탕비실·라운지 + 홀수 번째 팀 방.
+    const TOP = [["meeting", 9], ["server", 5]], BOT = [["kitchen", 7], ["lounge", 7]];
+    list.forEach((t, i) => (i % 2 ? BOT : TOP).push([t, t.ru]));
+    const span = row => row.reduce((n, r) => n + r[1], 0);
+    const U = Math.max(span(TOP), span(BOT));
+    const V0 = ROOM_V, V1 = ROOM_V + HALL_V, V = V1 + ROOM_V;
+    SIZE = { U, V };
+    const PAD = 40;
+    OFFICE_W = Math.round((U + V + 3.2) * TX + PAD * 2);
+    OFFICE_H = Math.round((U + V) * TY + WALL_H + PAD * 2 + 20);
+    ORG = [PAD + (V + 3.2) * TX, PAD + WALL_H + 10];
+
+    const N = {}, E = [], W = [], B = [], D = [], OF = [], R = [], F = [], LB = [], CH = [], CHATS = [];
+    const S = { sofa: [], coffee: [], cafe: [], meeting: [], board: [], server: [], stroll: [], armchair: [] };
+    const addNode = (k, u, v) => { N[k] = iso(u, v); return k; };
+    const link = (a, b) => E.push([a, b]);
+    const wall = (u0, v0, u1, v1) => W.push([iso(u0, v0), iso(u1, v1)]);
+    const wallWithDoor = (u0, v, u1, gap = 2.4) => { const m = (u0 + u1) / 2; wall(u0, v, m - gap / 2, v); wall(m + gap / 2, v, u1, v); };
+    const chairAt = (u, v) => {
+      const s = iso(u, v).map(Math.round);
+      CH.push({ box: [s[0] - 24, s[1] - 20, 48, 46], seat: s, kid: 12 });
+      return { seat: s, idx: CH.length - 1 };
+    };
+
+    // ---------- 바닥 — 건물 + 출입문 앞 현관(바깥 통로 점 out 이 바닥 안에 있어야 걸어 나간다) ----------
+    OFFICE_FLOOR = [iso(0, 0), iso(U, 0), iso(U, V), iso(0, V), iso(0, V1), iso(-3.2, V1), iso(-3.2, V0), iso(0, V0)];
+    wall(0, 0, 0, V0); wall(0, V1, 0, V); wall(0, 0, U, 0); wall(U, 0, U, V); wall(0, V, U, V);   // 바깥벽(왼쪽은 출입문 자리 비움)
+    wall(-3.2, V0, 0, V0); wall(-3.2, V1, 0, V1);                                               // 현관 난간
+
+    // ---------- 복도 ----------
+    const hv = (V0 + V1) / 2;
+    addNode("out", -2.6, hv); addNode("door", -0.3, hv); addNode("inner", 1.2, hv);
+    link("out", "door"); link("door", "inner");
+    R.push({ kind: "hall", poly: rect(0, V0, U, V1), color: "#DCDFE4" });
+    const hall = ["inner"];
+    for (let u = 4; u < U - 1; u += 4) hall.push(addNode(`h${u}`, u, hv));
+    hall.push(addNode("hEnd", U - 1.2, hv));
+    for (let i = 1; i < hall.length; i++) link(hall[i - 1], hall[i]);
+    const hallAt = u => hall.reduce((a, b) => (Math.abs(N[b][0] - iso(u, hv)[0]) < Math.abs(N[a][0] - iso(u, hv)[0]) ? b : a));
+    for (let u = 3; u < U - 1; u += 7) S.stroll.push({ at: iso(u, hv + (u % 2 ? 0.5 : -0.5)), via: hallAt(u) });
+
+    // ---------- 방 하나(팀 방 또는 시설) — side: 1 = 위쪽(문이 아래 벽), -1 = 아래쪽(문이 위 벽) ----------
+    let ti = 0;
+    function room(item, u0, u1, side) {
+      const [what, w] = item, cu = (u0 + u1) / 2;
+      const v0 = side > 0 ? 0 : V1, v1 = side > 0 ? V0 : V;                // 방의 v 범위
+      const doorV = side > 0 ? V0 : V1;                                     // 복도 쪽 벽
+      const inV = doorV - side * 1.3;                                       // 문 안쪽 점
+      const far = k => doorV - side * k;                                    // 문에서 방 안쪽으로 k 만큼
+      const id = typeof what === "string" ? `f_${what}` : `r${ti++}`;
+      if (u0 > 0) wall(u0, v0, u0, v1);
+      wallWithDoor(u0, doorV, u1, 2.4);
+      const door = addNode(`${id}d`, cu, doorV + side * 0.9), inn = addNode(`${id}i`, cu, inV);
+      link(hallAt(cu), door); link(door, inn);
+      if (typeof what !== "string") {                                       // ----- 팀 방 -----
+        const t = what;
+        R.push({ kind: "room", team: t.common ? "" : t.name, common: !!t.common, color: t.color, poly: rect(u0, v0, u1, v1) });
+        // 책상 줄: 위쪽 방은 뒷벽(v≈2) 앞, 아래쪽 방은 앞벽 쪽(v≈V-3.5). 사람은 책상 아래(남쪽)에 등 보이고 앉는다.
+        const rowV = side > 0 ? v0 + 2.2 : v1 - 3.6, seatV = rowV + 1.5, viaV = rowV + 3.1;
+        const vias = [];
+        for (let k = 0; k < t.desks; k++) {
+          const du = u0 + 2 + k * DESK_U;
+          vias.push(addNode(`${id}v${k}`, du, viaV));
+          const poly = rect(du - 1.1, rowV - 0.7, du + 1.1, rowV + 0.6);
+          F.push({ kind: "desk", poly, at: iso(du, rowV), y: iso(du, rowV + 0.6)[1] }); B.push(poly);
+          const c = chairAt(du, seatV);
+          D.push({ seat: c.seat, via: vias[k], row: id, team: t.common ? "" : t.name });
+        }
+        for (let i = 1; i < vias.length; i++) link(vias[i - 1], vias[i]);
+        link(inn, vias[Math.floor(vias.length / 2)]);
+        if (side < 0) link(inn, vias[0]);                                   // 아래쪽 방은 문에서 책상 줄까지 멀다 — 길 하나 더
+        // 소파: 위쪽 방은 앞(복도 쪽) 오른쪽, 아래쪽 방은 뒤(복도 쪽) 오른쪽 — 어느 쪽이든 문 가까이
+        const su = u1 - 2.2, sv = side > 0 ? v1 - 2.6 : v0 + 1.6;
+        const sofaPoly = rect(su - 1.6, sv - 0.7, su + 1.6, sv + 0.5);
+        F.push({ kind: "sofa", poly: sofaPoly, at: iso(su, sv), color: t.color, y: iso(su, sv + 0.5)[1] }); B.push(sofaPoly);
+        const sVia = addNode(`${id}s`, su, sv + 1.6);
+        link(inn, sVia);
+        for (const [dx, face] of [[-0.75, 1], [0.75, -1]]) S.sofa.push({ at: iso(su + dx, sv + 0.35), via: sVia, face, team: t.common ? "" : t.name });
+        CHATS.push({ pts: [iso(su - 0.75, sv + 0.35), iso(su + 0.75, sv + 0.35)], via: sVia, sit: true, team: t.common ? "" : t.name });
+        const pu = u0 + 1, pv = side > 0 ? v1 - 1.2 : v0 + 1.2;
+        F.push({ kind: "plant", at: iso(pu, pv), y: iso(pu, pv)[1] });
+        CHATS.push({ pts: [iso(cu - 1.2, far(2.6)), iso(cu + 1.2, far(2.6))], via: inn, team: t.common ? "" : t.name });
+        LB.push({ text: t.common ? "" : t.name, common: !!t.common, at: iso(cu, side > 0 ? doorV : v1), color: t.color, side });
+        return;
+      }
+      const kind = what;
+      R.push({ kind, poly: rect(u0, v0, u1, v1), color: { kitchen: "#F3EBDD", lounge: "#E6EEE6", meeting: "#E4E9F2", server: "#E3E3E8" }[kind] });
+      if (kind === "meeting") {                                             // 위쪽: 긴 탁자 + 앞줄 의자 셋 + 화이트보드(뒷벽)
+        const tu = cu, tv = v0 + 3.4;
+        const table = rect(tu - 2.6, tv - 0.6, tu + 2.6, tv + 0.6);
+        F.push({ kind: "mtable", poly: table, y: iso(tu + 2.6, tv + 0.6)[1] }); B.push(table);
+        F.push({ kind: "board", at: iso(tu, v0 + 0.25), y: 0 });
+        const mv = addNode("f_mtg", tu, tv + 2.5); link(inn, mv);
+        [-1.7, 0, 1.7].forEach((du, k) => {
+          const c = chairAt(tu + du, tv + 1.1);
+          OF.push({ seat: c.seat, via: mv, chair: c.idx });
+          if (k !== 1) S.meeting.push({ at: c.seat, via: mv, face: 1, chair: c.idx });
+        });
+        const bv = addNode("f_board", tu - 3.4, v0 + 1.8); link(inn, bv);
+        S.board.push({ at: iso(tu - 3.4, v0 + 1.5), via: bv, face: 1 });
+        CHATS.push({ pts: [iso(tu - 1.7, tv + 1.1), iso(tu, tv + 1.1), iso(tu + 1.7, tv + 1.1)], via: mv });
+      } else if (kind === "server") {                                       // 위쪽: 랙 둘(뒷벽), 그 앞에 서서 일한다
+        const rv = v0 + 1.2;
+        for (let k = 0; k < 2; k++) {
+          const ru = u0 + 1.4 + k * 2.1, rack = rect(ru - 0.8, rv - 0.5, ru + 0.8, rv + 0.5);
+          F.push({ kind: "rack", poly: rack, at: iso(ru, rv), y: iso(ru, rv + 0.5)[1] }); B.push(rack);
+        }
+        const sv = addNode("f_rack", u0 + 2.5, rv + 2.4); link(inn, sv);
+        const at = iso(u0 + 2.5, rv + 1.6);
+        S.server.push({ at, via: sv, face: 1 });
+        OFFICE_HOMES = { server: { work: { at, via: sv, face: 1 }, rest: 0.75, queue: -1 } };
+        F.push({ kind: "plant", at: iso(u1 - 1, v1 - 1.2), y: iso(u1 - 1, v1 - 1.2)[1] });
+      } else if (kind === "kitchen") {                                      // 아래쪽: 커피 카운터(앞벽), 둥근 탁자
+        const counter = rect(u0 + 0.3, v1 - 1.4, u0 + 3.4, v1 - 0.2);
+        F.push({ kind: "counter", poly: counter, y: iso(u0 + 3.4, v1 - 0.2)[1] }); B.push(counter);
+        const cv = addNode("f_coffee", u0 + 2.4, v1 - 2.6); link(inn, cv);
+        S.coffee.push({ at: iso(u0 + 1.4, v1 - 1.9), via: cv, face: -1 }, { at: iso(u0 + 2.7, v1 - 1.9), via: cv, face: -1 });
+        const tu = u0 + 5, tv = v0 + 3.6;
+        F.push({ kind: "table", at: iso(tu, tv), y: iso(tu, tv + 0.4)[1] }); B.push(ring(tu, tv, 1.0));
+        const tvia = addNode("f_cafe", tu, tv + 2); link(inn, tvia);
+        S.cafe.push({ at: iso(tu - 1.2, tv + 0.9), via: tvia, face: 1 }, { at: iso(tu + 1.2, tv + 0.9), via: tvia, face: -1 });
+        CHATS.push({ pts: [iso(tu - 1.2, tv + 0.9), iso(tu + 1.2, tv + 0.9)], via: tvia, sit: true });
+      } else if (kind === "lounge") {                                       // 아래쪽: 큰 소파(복도 쪽 벽 앞), 안락의자, 화분
+        const su = cu, sv = v0 + 2.2;
+        const sofaPoly = rect(su - 2, sv - 0.7, su + 2, sv + 0.5);
+        F.push({ kind: "sofa", poly: sofaPoly, at: iso(su, sv), color: "#7FA68C", big: true, y: iso(su, sv + 0.5)[1] }); B.push(sofaPoly);
+        const svia = addNode("f_sofa", su, sv + 1.8); link(inn, svia);
+        S.sofa.push({ at: iso(su - 1.1, sv + 0.35), via: svia, face: 1 }, { at: iso(su + 1.1, sv + 0.35), via: svia, face: -1 });
+        CHATS.push({ pts: [iso(su - 1.1, sv + 0.35), iso(su + 1.1, sv + 0.35)], via: svia, sit: true });
+        const au = u0 + 1.6, av = v1 - 2.4;
+        F.push({ kind: "armchair", at: iso(au, av), y: iso(au, av + 0.4)[1] });
+        const avia = addNode("f_arm", au + 1.4, av + 0.8); link(inn, avia);
+        S.armchair.push({ at: iso(au, av + 0.2), via: avia, face: 1 });
+        F.push({ kind: "plant", at: iso(u1 - 1, v1 - 1.2), y: iso(u1 - 1, v1 - 1.2)[1] });
+        S.stroll.push({ at: iso(cu + 1.6, v1 - 1.8), via: inn });
+      }
+    }
+    const lay = (row, side) => { let u = 0; for (const it of row) { room(it, u, u + it[1], side); u += it[1]; } return u; };
+    const topU = lay(TOP, 1), botU = lay(BOT, -1);
+    for (const [used, side] of [[topU, 1], [botU, -1]]) {                   // 남는 자리 = 테라스(화분)
+      if (used >= U - 0.5) continue;
+      const v0 = side > 0 ? 0 : V1, v1 = side > 0 ? V0 : V;
+      R.push({ kind: "terrace", poly: rect(used, v0, U, v1), color: "#E9EFE3" });
+      wall(used, v0, used, v1); wallWithDoor(used, side > 0 ? V0 : V1, U, 2.4);
+      const inn = addNode(`t${side > 0 ? "T" : "B"}`, (used + U) / 2, side > 0 ? V0 - 1.6 : V1 + 1.6); link(hallAt((used + U) / 2), inn);
+      S.stroll.push({ at: iso((used + U) / 2, side > 0 ? V0 - 3 : V1 + 3), via: inn });
+      for (let u = used + 1.2; u < U - 0.5; u += 2.5) F.push({ kind: "plant", at: iso(u, side > 0 ? v0 + 1 : v1 - 1), y: iso(u, side > 0 ? v0 + 1 : v1 - 1)[1] });
+    }
+
+    OFFICE_NODES = N; OFFICE_EDGES = E; OFFICE_WALLS = W; OFFICE_BLOCKS = B;
+    OFFICE_DESKS = D; OFFICE_OVERFLOW = OF; OFFICE_SPOTS = S; OFFICE_CHATS = CHATS;
+    OFFICE_ROOMS = R; OFFICE_FURNITURE = F; OFFICE_LABELS = LB;
+    OFFICE_ATLAS.chairs = CH;                                            // 의자 등받이·앉는 점 — 화면과 길 찾기가 쓴다
+    return { rooms: list.length, w: OFFICE_W, h: OFFICE_H };
+  }
+  function ring(cu, cv, r) {
+    return Array.from({ length: 8 }, (_, i) => iso(cu + r * Math.cos(i * Math.PI / 4), cv + r * Math.sin(i * Math.PI / 4)));
+  }
+
+  /** 설정(teams·staff) → build 에 넣을 팀 목록. staff 로 팀별 인원을 센다 */
+  function teamsFromConfig(cfg) {
+    const teams = Object.entries(cfg?.teams || {}).map(([name, v]) => ({ name, color: (v && v.color) || "#8FA3B8", size: 0 }));
+    for (const s of Object.values(cfg?.staff || {})) { const t = teams.find(x => x.name === s.team); if (t) t.size++; }
+    return teams;
+  }
+  const key = teams => JSON.stringify(teams.map(t => [t.name, t.color, Math.max(3, Math.min(6, t.size + 1))]));
+
+  return { build, teamsFromConfig, key, iso, uv, size: () => SIZE, TX, TY, WALL_H, SIT, COMMON };
+})();
