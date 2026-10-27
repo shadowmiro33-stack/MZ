@@ -51,3 +51,17 @@
 - 프로젝트 색이 모자·가디건에만 칠해진다(`-key` 확인).
 - 서브에이전트가 문에서 종종걸음으로 들어와 주인 옆에 줄 선다.
 - 브라우저 콘솔 오류 0. 콘솔에서 `officeDebug()` 를 부르면 사람마다 지금 자세(`pose`)가 나온다.
+
+## 강아지 품종 추가하기 (코드로 그리는 캐릭터)
+
+개구리·카피바라는 그림 파일이지만, 강아지 품종은 `tools/sprites/dog.py` 가 SVG 로 그려 시트 전부와 마스크·아틀라스를 만든다.
+
+```bash
+pip install pillow playwright && python3 -m playwright install chromium   # 생성 도구만 필요(실행 시 의존성 0 은 그대로)
+python3 tools/sprites/dog.py --breed pome
+```
+
+1. `BREEDS` 에 품종을 더한다(털색·얼굴색·귀·꼬리 모양).
+2. 위 명령으로 `web/office/<품종>*.webp` 12장과 `office-atlas.js` 의 `heights`·`strides` 가 갱신된다.
+3. `web/office-world.js` 의 `OFFICE_SPECIES`(그리는 종류)·`OFFICE_AUTO_SPECIES`(자동 배정 후보), `server/config.mjs` 의 `KINDS`,
+   `web/admin.js` 의 `KINDS`·`kind.<품종>` 문구에 같은 이름을 적는다.

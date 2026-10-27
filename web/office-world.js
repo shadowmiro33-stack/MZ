@@ -124,6 +124,11 @@ const OFFICE_CHATS = [
   { pts: [[290, 320], [370, 302]], vias: ["lgW", "rug"], sit: true },   // 커피테이블 양쪽으로 돌아 앉는다
 ];
 
+// 캐릭터 종류 — 시트 이름 앞머리(web/office/<종>*.webp). AUTO = 명부에 종류가 없을 때 이름으로 고르는 후보(강아지 품종).
+// 새 품종을 더하면 tools/sprites/dog.py 로 시트를 만들고 여기와 server/config.mjs KINDS·admin.js 에 같이 적는다.
+const OFFICE_SPECIES = ["pome", "frog", "capy"];
+const OFFICE_AUTO_SPECIES = ["pome"];
+
 // 코딩할 때 머리 위로 떠오르는 기호(언어와 무관)
 const OFFICE_CODE = ["{ }", "</>", "( );", "=>", "01", "git", "fn", "#"];
 

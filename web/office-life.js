@@ -24,10 +24,10 @@ const OfficeLife = (() => {
     return h >>> 0;
   }
   const colorOf = name => OFFICE_COLORS[hash(name) % OFFICE_COLORS.length];
-  const speciesOf = name => (hash("종:" + name) % 2 ? "capy" : "frog");
+  const speciesOf = name => OFFICE_AUTO_SPECIES[hash("종:" + name) % OFFICE_AUTO_SPECIES.length];
   // 명부(설정 staff·teams)가 정한 색·종류가 있으면 그것, 없으면 이름으로 — 색·종은 폴더 이름 기준이라 표시 이름을 바꿔도 안 변한다
   const colorFor = d => (d.color || colorOf(d.folder || d.name));
-  const speciesFor = d => (d.kind === "frog" || d.kind === "capy" ? d.kind : speciesOf(d.folder || d.name));
+  const speciesFor = d => (OFFICE_SPECIES.includes(d.kind) ? d.kind : speciesOf(d.folder || d.name));
   const cut = (text, n) => { const a = Array.from(text || ""); return a.length > n ? a.slice(0, n).join("") + "…" : a.join(""); };
   const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(v => v[1]);
   // 사건 — 글은 화면이 언어에 맞게 만든다(key = i18n 의 ev.* , arg = 끼워 넣을 말)

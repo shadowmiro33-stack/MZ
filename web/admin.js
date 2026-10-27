@@ -5,7 +5,7 @@
 
 (() => {
   const $ = id => document.getElementById(id);
-  const KINDS = ["auto", "frog", "capy"];
+  const KINDS = ["auto", "pome", "frog", "capy"];       // server/config.mjs KINDS · web/office-world.js OFFICE_SPECIES 와 같게
   const DEFAULT_COLOR = "#2E86DE";
   // 새 팀의 기본 색 — 아직 안 쓴 것부터 차례로(사무실 캐릭터 색과 같은 계열)
   const PALETTE = ["#2E86DE", "#E74C3C", "#27AE60", "#8E44AD", "#E67E22", "#16A085", "#E84393", "#F1C40F", "#3742FA", "#8D6E63", "#00B8D4", "#7CB342"];
@@ -28,7 +28,7 @@
       "staff.seen": "지금 사무실에 있는 프로젝트:", "staff.add": "+ 직원 추가", "staff.empty": "명부가 비어 있습니다 — 폴더 이름이 그대로 명찰이 됩니다",
       "col.key": "폴더 / 경로", "col.name": "표시 이름", "col.title": "직책", "col.team": "팀", "col.kind": "캐릭터",
       "col.home": "자리", "col.color": "색", "col.hidden": "숨김",
-      "kind.auto": "자동", "kind.frog": "개구리", "kind.capy": "카피바라", "home.desk": "책상", "home.server": "서버실",
+      "kind.auto": "자동(강아지)", "kind.pome": "포메라니안", "kind.frog": "개구리", "kind.capy": "카피바라", "home.desk": "책상", "home.server": "서버실",
       "team.none": "(없음)", "color.team": "팀 색", "color.own": "직접", json: "저장될 설정(JSON) 미리보기",
       "ph.key": "폴더 이름 또는 C:\\경로", "ph.name": "폴더 이름 그대로", "ph.title": "예: 프론트엔드",
       dup: "같은 폴더가 두 번 있습니다", confirmLeave: "저장하지 않은 변경이 있습니다. 나갈까요?",
@@ -49,7 +49,7 @@
       "staff.seen": "In the office right now:", "staff.add": "+ Add employee", "staff.empty": "Nobody listed yet — folder names are used as name tags",
       "col.key": "Folder / path", "col.name": "Display name", "col.title": "Title", "col.team": "Team", "col.kind": "Character",
       "col.home": "Seat", "col.color": "Color", "col.hidden": "Hide",
-      "kind.auto": "Auto", "kind.frog": "Frog", "kind.capy": "Capybara", "home.desk": "Desk", "home.server": "Server room",
+      "kind.auto": "Auto (dog)", "kind.pome": "Pomeranian", "kind.frog": "Frog", "kind.capy": "Capybara", "home.desk": "Desk", "home.server": "Server room",
       "team.none": "(none)", "color.team": "Team", "color.own": "Custom", json: "Preview of the config that will be saved (JSON)",
       "ph.key": "folder name or full path", "ph.name": "same as folder", "ph.title": "e.g. Frontend",
       dup: "This folder appears twice", confirmLeave: "You have unsaved changes. Leave anyway?",

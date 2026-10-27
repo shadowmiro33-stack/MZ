@@ -38,8 +38,7 @@
     const n = Math.floor((e.dist || 0) / (A.strides[e.species] * standOf(e) / A.stand)) % WALK_N;
     return (up ? "stepB" : "stepF") + n;
   }
-  const SHEETS = ["frog", "frog2", "frog3", "frogmini", "frogwalk", "frogphone",
-                  "capy", "capy2", "capy3", "capymini", "capywalk", "capyphone"];
+  const SHEETS = OFFICE_SPECIES.flatMap(s => [s, s + "2", s + "3", s + "mini", s + "walk", s + "phone"]);
   const TINT = 0.6;              // 색칠한 칸 축척 — 쓰는 자세만 그때그때 칠해 메모리를 아낀다
   const STAND = 96;              // 보통 캐릭터 키(사무실 그림 픽셀)
   const KID = 0.7;               // 커밋이 적은 저장소 = 꼬마(70%)
@@ -183,7 +182,7 @@
 
   function drawMini(ctx, m) {
     const p = L.people.get(m.owner);
-    const species = p?.species || "frog", color = p?.color || "#888", stand = p ? standOf(p) : STAND;
+    const species = p?.species || OFFICE_AUTO_SPECIES[0], color = p?.color || "#888", stand = p ? standOf(p) : STAND;
     const t = L.t, ph = m.phase;
     let pose = "mStand", face = m.face, dy = 0, dx = 0, tilt, sx, sy;
     if (m.over && t < m.over.until) pose = m.over.pose;
