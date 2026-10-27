@@ -65,3 +65,13 @@ python3 tools/sprites/dog.py --breed pome
 2. 위 명령으로 `web/office/<품종>*.webp` 12장과 `office-atlas.js` 의 `heights`·`strides` 가 갱신된다.
 3. `web/office-world.js` 의 `OFFICE_SPECIES`(그리는 종류)·`OFFICE_AUTO_SPECIES`(자동 배정 후보), `server/config.mjs` 의 `KINDS`,
    `web/admin.js` 의 `KINDS`·`kind.<품종>` 문구에 같은 이름을 적는다.
+
+## AI 로 뽑은 캐릭터 격자(3×3) 넣기 — `tools/sprites/sheet.py`
+
+몽실이(`pomesable`)·별이(`pomebw`)는 이 방식이다. 원본 격자는 `docs/sprites-src/<종>-grid.png`.
+
+1. 이미지 생성기에 README 의 캐릭터 프롬프트(흰 캡·흰 후드티, 단색 연회색 배경, 3×3 격자, 자세 9개)를 넣어 격자 한 장을 받는다.
+2. `pip install pillow scipy` 후 `python3 tools/sprites/sheet.py 격자.png --breed <종>` — 칸을 잘라 배경을 지우고(테두리에서 번지는 채우기),
+   서 있는 키 228px 로 맞춰 발끝을 칸 아래에 정렬하고, 흰 모자·후드티(밝고 매끈한 부분)를 `-key` 마스크로 뽑아 시트 6장과 아틀라스를 쓴다.
+3. 걷기는 격자의 5·6번 두 장을 번갈아 쓰고, 앉기는 서 있는 그림을 조금 눌러 쓴다(의자 등받이가 허리 아래를 가린다).
+   격자 3·4번(의자·소파에 앉은 그림)은 가구가 같이 그려져 쓰지 않는다.
