@@ -40,7 +40,7 @@ export function decorate(person, cfg, name, key) {
     folder: name,
     title: s.title || '',
     team,
-    kind: s.kind || null,
+    kind: s.kind || (team && cfg.teams[team].kind) || null,   // 개인 > 팀 대표 > 자동
     color: s.color || teamColor || null,
   };
 }

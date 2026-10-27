@@ -19,7 +19,7 @@ export const DEFAULTS = Object.freeze({
   lang: 'auto',
 });
 
-export const KINDS = Object.freeze(['auto', 'pomesable', 'pomebw', 'pome', 'frog', 'capy']); // web/office-world.js OFFICE_SPECIES 와 같게
+export const KINDS = Object.freeze(['auto', 'pomesable', 'pomebw', 'pome', 'shiba', 'corgi', 'maltese', 'poodle', 'frog', 'capy']); // web/office-world.js OFFICE_SPECIES 와 같게
 export const HOMES = Object.freeze(['server']);
 export const MAX_TITLE = 40;
 export const MAX_NAME = 24;
@@ -40,7 +40,7 @@ const plainObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
 const text = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, max) : '');
 const color = (v) => (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v.trim()) ? v.trim().toUpperCase() : '');
 
-/** 팀 목록 { 이름: { color } } — 이름은 24자, 색은 #RRGGBB 만 */
+/** 팀 목록 { 이름: { color, kind } } — 이름은 24자, 색은 #RRGGBB 만, kind 는 KINDS 중 하나(팀 대표 캐릭터) */
 function normalizeTeams(raw) {
   const out = {};
   if (!plainObj(raw)) return out;
@@ -49,6 +49,7 @@ function normalizeTeams(raw) {
     if (!name || Object.keys(out).length >= MAX_TEAMS) continue;
     const c = plainObj(v) ? color(v.color) : color(v);
     out[name] = c ? { color: c } : {};
+    if (plainObj(v) && KINDS.includes(v.kind) && v.kind !== 'auto') out[name].kind = v.kind;   // 팀 대표 캐릭터
   }
   return out;
 }

@@ -36,7 +36,7 @@ input[type="checkbox"] { width: 16px; height: 16px; }
 
 /* 팀 줄 */
 .a-rows { display: flex; flex-direction: column; gap: 6px; }
-.a-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center; }
+.a-row { display: grid; grid-template-columns: 1fr auto auto auto auto; gap: 8px; align-items: center; }
 .a-row .a-swatch { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,.15); }
 .a-row .a-count { font-size: 12px; color: var(--ink3); white-space: nowrap; }
 .a-empty { font-size: 13px; color: var(--ink3); padding: 6px 0; }
@@ -65,6 +65,6 @@ input[type="checkbox"] { width: 16px; height: 16px; }
 .a-json summary { cursor: pointer; font-size: 13px; color: var(--ink3); }
 
 @media (max-width: 720px) {
-  .a-row { grid-template-columns: 1fr auto auto; }
+  .a-row { grid-template-columns: 1fr auto auto auto; }
   .a-row .a-count { display: none; }
 }

@@ -29,6 +29,22 @@ BREEDS = {
         "fur": "#F7F4EF", "fur2": "#2A2A2E", "cream": "#FFFFFF", "ink": "#2E2A2A",
         "nose": "#1E1512", "cheek": "#F2C4C4", "mask": "#2A2A2E", "blaze": "#F7F4EF", "tongue": False,
     },
+    "shiba": {  # 시바 — 붉은 주황 털, 흰 얼굴·가슴, 세모 귀
+        "fur": "#E0813D", "fur2": "#C96A2A", "cream": "#FFF6E8", "ink": "#3B2A1A",
+        "nose": "#1E1512", "cheek": "#F4B8A0", "mask": None, "blaze": None, "tongue": True,
+    },
+    "corgi": {  # 웰시코기 — 주황·흰, 큰 귀, 이마 블레이즈
+        "fur": "#E9A35A", "fur2": "#D98B3C", "cream": "#FFFFFF", "ink": "#3B2A1A",
+        "nose": "#1E1512", "cheek": "#F4B8A0", "mask": "#D98B3C", "blaze": "#FFFFFF", "tongue": False, "ears": "big",
+    },
+    "maltese": {  # 말티즈 — 새하얀 털, 늘어진 귀
+        "fur": "#FFFFFF", "fur2": "#F1EEE8", "cream": "#FFFFFF", "ink": "#3A3634",
+        "nose": "#1E1512", "cheek": "#F6C9CF", "mask": None, "blaze": None, "tongue": False, "ears": "drop",
+    },
+    "poodle": {  # 푸들 — 살구색 곱슬 털, 늘어진 귀
+        "fur": "#E6B98A", "fur2": "#D4A270", "cream": "#F6DEC2", "ink": "#3B2A1A",
+        "nose": "#1E1512", "cheek": "#F4B8A0", "mask": None, "blaze": None, "tongue": True, "ears": "drop", "curly": True,
+    },
 }
 
 def fmt(v):
@@ -94,7 +110,7 @@ class Dog:
         self.circle(x, y, 20 * s, c["fur"], sw=3)
         self.circle(x - 6 * s, y - 4 * s, 9 * s, c["cream"], sw=0, stroke="none")
 
-    def leg(self, x, y, h=40, w=22, dx=0, kick=0):
+    def leg(self, x, y, h=34, w=24, dx=0, kick=0):
         """다리: 윗점 (x,y) 에서 아래로 h. dx = 발 옆 이동(걷기). kick>0 이면 발을 앞(아래)으로 들어 올린 모습"""
         c = self.c
         fx = x + dx
@@ -135,7 +151,7 @@ class Dog:
         self.out = saved
         return ex, ey
 
-    def body(self, x, y, rx=46, ry=40, back=False, sit=False):
+    def body(self, x, y, rx=50, ry=38, back=False, sit=False):
         """몸통 = 가디건(마스크). 앞모습이면 가슴 크림 + 단추."""
         c = self.c
         chest = f"M{fmt(x - 16)},{fmt(y - ry + 4)} Q{fmt(x)},{fmt(y + 10)} {fmt(x + 16)},{fmt(y - ry + 4)} L{fmt(x + 14)},{fmt(y + ry - 10)} L{fmt(x - 14)},{fmt(y + ry - 10)} Z"
@@ -152,18 +168,25 @@ class Dog:
         else:
             self.line(x, y - ry + 8, x, y + ry - 8, sw=2.5)
 
-    def head(self, x, y, r=56, face="front", eyes="open", mouth="smile", tilt=0, cap=True, blush=True):
+    def head(self, x, y, r=64, face="front", eyes="open", mouth="smile", tilt=0, cap=True, blush=True):
         """머리. face = front|left|right|back. eyes = open|happy|closed|wink. mouth = smile|open|o|flat"""
         c = self.c
         self.out.append(f'<g transform="rotate({fmt(tilt)} {fmt(x)} {fmt(y)})">')   # 마스크도 같이 기울인다
-        # 귀(머리 뒤)
-        for side in (-1, 1):
-            ex = x + side * r * 0.72
-            ey = y - r * 0.68
-            self.path(f"M{fmt(ex - 14*side)},{fmt(ey + 16)} L{fmt(ex + 4*side)},{fmt(ey - 20)} L{fmt(ex + 16*side)},{fmt(ey + 14)} Z", c["fur2"])
-            self.path(f"M{fmt(ex - 7*side)},{fmt(ey + 13)} L{fmt(ex + 3*side)},{fmt(ey - 8)} L{fmt(ex + 10*side)},{fmt(ey + 12)} Z", c["cheek"], sw=0, stroke="none")
-        # 솜뭉치 머리
-        self.path(self.fluff_ring(x, y, r), c["fur"])
+        # 귀(머리 뒤) — tri 작은 세모(포메·시바) · big 큰 세모(웰시코기) · drop 늘어진 귀(말티즈·푸들, 머리 앞에)
+        ears = c.get("ears", "tri")
+        if ears != "drop":
+            k = 1.45 if ears == "big" else 1.0
+            for side in (-1, 1):
+                ex = x + side * r * 0.72
+                ey = y - r * 0.68
+                self.path(f"M{fmt(ex - 14*k*side)},{fmt(ey + 16)} L{fmt(ex + 4*side)},{fmt(ey - 20*k)} L{fmt(ex + 16*k*side)},{fmt(ey + 14)} Z", c["fur2"])
+                self.path(f"M{fmt(ex - 7*k*side)},{fmt(ey + 13)} L{fmt(ex + 3*side)},{fmt(ey - 8*k)} L{fmt(ex + 10*k*side)},{fmt(ey + 12)} Z", c["cheek"], sw=0, stroke="none")
+        # 솜뭉치 머리 (곱슬 품종은 봉우리를 더 촘촘히)
+        self.path(self.fluff_ring(x, y, r, n=26, bump=0.13) if c.get("curly") else self.fluff_ring(x, y, r), c["fur"])
+        if ears == "drop":
+            for side in (-1, 1):
+                ex = x + side * r * 0.86
+                self.ellipse(ex, y + r * 0.1, 15, 30, c["fur2"], sw=3, rot=side * 12)
         if c.get("mask"):                       # 머리 위·양 볼의 진한 무늬(마스크) — 얼굴 크림 부분보다 아래에
             self.path(f"M{fmt(x - r*0.98)},{fmt(y + r*0.2)} Q{fmt(x - r*0.9)},{fmt(y - r*0.9)} {fmt(x)},{fmt(y - r*0.98)} Q{fmt(x + r*0.9)},{fmt(y - r*0.9)} {fmt(x + r*0.98)},{fmt(y + r*0.2)} Q{fmt(x + r*0.5)},{fmt(y + r*0.05)} {fmt(x)},{fmt(y + r*0.1)} Q{fmt(x - r*0.5)},{fmt(y + r*0.05)} {fmt(x - r*0.98)},{fmt(y + r*0.2)} Z", c["mask"], sw=0, stroke="none")
             if c.get("blaze") and face != "back":   # 이마 흰 줄
@@ -171,14 +194,15 @@ class Dog:
         if face != "back":
             fx = x + (0 if face == "front" else (-14 if face == "left" else 14))
             # 얼굴 크림 부분
-            self.ellipse(fx, y + r * 0.22, r * 0.62, r * 0.5, c["cream"], sw=0, stroke="none")
+            self.ellipse(fx, y + r * 0.24, r * 0.66, r * 0.52, c["cream"], sw=0, stroke="none")
             # 눈
             for side in (-1, 1):
                 ex = fx + side * r * 0.34
-                ey = y - r * 0.04
+                ey = y + r * 0.02
                 if eyes == "open" or (eyes == "wink" and side == -1):
-                    self.ellipse(ex, ey, 7.5, 9.5, c["ink"], sw=0, stroke="none")
-                    self.circle(ex - 2.5, ey - 3, 2.6, "#FFFFFF", sw=0, stroke="none")
+                    self.ellipse(ex, ey, 9.5, 12, c["ink"], sw=0, stroke="none")
+                    self.circle(ex - 3.2, ey - 4, 3.6, "#FFFFFF", sw=0, stroke="none")
+                    self.circle(ex + 3.5, ey + 4, 1.8, "#FFFFFF", sw=0, stroke="none")
                 elif eyes == "happy":
                     self.path(f"M{fmt(ex - 8)},{fmt(ey + 3)} Q{fmt(ex)},{fmt(ey - 9)} {fmt(ex + 8)},{fmt(ey + 3)}", "none", sw=3.5)
                 else:  # closed / wink other eye
@@ -199,7 +223,7 @@ class Dog:
                 self.line(fx - 7, ny + 9, fx + 7, ny + 9, sw=2.5)
             if blush:
                 for side in (-1, 1):
-                    self.ellipse(fx + side * r * 0.5, y + r * 0.26, 7, 4.5, c["cheek"], sw=0, stroke="none")
+                    self.ellipse(fx + side * r * 0.52, y + r * 0.28, 9, 5.5, c["cheek"], sw=0, stroke="none")
         # 모자(마스크) — 캡: 머리 윗부분 돔 + 챙
         if cap:
             ty = y - r * 0.55
@@ -219,7 +243,7 @@ class Dog:
         c = self.c
         P = {}
         # 기준 좌표(서 있는 앞모습)
-        hy, by, ly = 118, 200, 234      # 머리·몸·다리 윗점
+        hy, by, ly = 124, 206, 240      # 머리·몸·다리 윗점
         if name == "stand":
             self.tail(152, 198); self.leg(94, ly); self.leg(126, ly)
             self.body(CX, by); self.arm(70, 182, 8); self.arm(150, 182, -8)

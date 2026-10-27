@@ -136,7 +136,8 @@ thinking·빈 글은 건너뛴다. 대화 기록 형식은 Claude Code 내부 �
 - `port` — 서버 포트(환경변수 `CLAUDE_OFFICE_PORT` 가 우선). 서버는 **127.0.0.1 에만** 붙는다.
 - `autoStart` — SessionStart 훅이 서버가 꺼져 있으면 백그라운드로 띄운다(재부팅 뒤에도 Claude 만 켜면 화면이 산다).
 - `title` — 사무실 이름(≤40자). 있으면 위 막대 제목·탭 제목이 두 언어 모두 이것.
-- `teams` — 팀 이름(≤24자, 최대 32개) → `{ color }`(#RRGGBB, 없어도 됨). 팀 색은 그 팀 직원의 기본 색.
+- `teams` — 팀 이름(≤24자, 최대 32개) → `{ color, kind }`(색 #RRGGBB, kind = 팀 대표 캐릭터, 둘 다 없어도 됨). 팀 색은 그 팀 직원의 기본 색, 팀마다 사무실에 방이 하나 생긴다.
+- 캐릭터 종류(`kind`) 우선순위: 직원(`staff.*.kind`) > 팀(`teams.*.kind`) > 자동(몽실이·별이 중 이름으로). 종류 목록은 server/config.mjs `KINDS` = web/office-world.js `OFFICE_SPECIES`: pomesable(몽실이)·pomebw(별이)·pome·shiba·corgi·maltese·poodle·frog·capy.
 - `staff` — 프로젝트 **폴더 이름 또는 경로**(윈도우는 대소문자 무시, 경로가 이름보다 우선) → 명부 항목(최대 200개).
   `name`·`title`·`team` 각 ≤24자, `kind` `frog`|`capy`(그 밖은 자동), `home` `"server"` 만, `color` #RRGGBB, `hidden` true.
   없는 팀을 적으면 팀 칸은 버려진다. 빈 칸은 저장할 때 뺀다.
