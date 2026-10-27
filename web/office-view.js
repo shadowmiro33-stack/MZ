@@ -508,10 +508,6 @@
     const al = $("ask-link");
     al.hidden = !asks.length;
     if (asks.length) { al.textContent = t("ask.badge", { n: asks.length }); al.href = "admin.html#chat=" + encodeURIComponent(asks[0].path); al.title = t("ask.open"); }
-    const asks = (ppl || []).filter(p => p.askTask);
-    const al = $("ask-link");
-    al.hidden = !asks.length;
-    if (asks.length) { al.textContent = t("ask.badge", { n: asks.length }); al.href = "admin.html#chat=" + encodeURIComponent(asks[0].path); al.title = t("ask.open"); }
     const notes = [];
     if (st.failImg) notes.push(t("note.img"));
     if (st.failNet) notes.push(t("note.net"));
