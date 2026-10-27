@@ -2,8 +2,8 @@
 import fs from 'node:fs';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
-import { IS_WIN, REPO_DIR, SERVER_FILE, logFile, officeHome, pidFile, startingLock } from './paths.mjs';
-import { demoPort, loadConfig, resolvePort } from './config.mjs';
+import { IS_WIN, REPO_DIR, SERVER_FILE, logFile, officeHome, pathKey, pidFile, startingLock } from './paths.mjs';
+import { VERSION, demoPort, loadConfig, resolvePort } from './config.mjs';
 import { pidAlive } from './liveness.mjs';
 
 export const APP = 'claude-3d-frog-office';
@@ -131,10 +131,20 @@ export async function ensureServer() {
   const cfg = loadConfig();
   if (!cfg.autoStart) return 'off';
   const port = resolvePort(cfg);
-  if (await health(port, 400)) return 'running';
+  const h = await health(port, 400);
+  if (h && !isStale(h)) return 'running';
   if (!takeStartLock()) return 'starting';
+  if (h) await stopServer();                                // 옛 폴더·옛 버전의 서버 — 끄고 이 저장소 것으로
   startDetached();
   return 'started';
+}
+
+/** 떠 있는 서버가 이 저장소·이 버전의 것인가 — 옛 폴더에서 뜬 서버는 새 코드를 안 보여 준다 */
+export function isStale(h) {
+  if (!h) return false;
+  if (h.version !== VERSION) return true;
+  if (typeof h.repo !== 'string') return true;            // repo 를 안 알려 주는 옛 버전
+  return pathKey(h.repo) !== pathKey(REPO_DIR);
 }
 
 /** 서버 끄기 — health 가 알려 준 pid 만 죽인다(남의 프로세스를 죽이지 않게) */

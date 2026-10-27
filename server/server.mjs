@@ -9,7 +9,7 @@ import { VERSION, demoPort, loadConfig, resolvePort, saveConfig } from './config
 import { buildSnapshot } from './snapshot.mjs';
 import { createDemo } from './demo.mjs';
 import { decorate, homeOf, isHidden } from './staff.mjs';
-import { pathKey } from './paths.mjs';
+import { REPO_DIR, pathKey } from './paths.mjs';
 import { APP, health, openBrowser, removePidFile, urlOf } from './control.mjs';
 
 const TYPES = {
@@ -184,7 +184,7 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
         const c = loadConfig();
         return sendJson(res, 200, { lang: c.lang, title: c.title, teams: c.teams, version: VERSION });
       }
-      if (route === '/api/health') return sendJson(res, 200, { ok: true, app: APP, version: VERSION, demo, pid: process.pid });
+      if (route === '/api/health') return sendJson(res, 200, { ok: true, app: APP, version: VERSION, demo, pid: process.pid, repo: REPO_DIR });
       const abs = files.get(route === '/' ? '/index.html' : route);
       if (!abs) return send(res, 404, 'not found');
       return sendFile(req, res, abs);

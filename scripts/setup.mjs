@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { configFile, logFile, officeHome, settingsFile } from '../server/paths.mjs';
 import { defaultConfigText, loadConfig, resolvePort } from '../server/config.mjs';
 import { EVENTS, buildCommand, installHooks, readSettingsStrict, writeSettings } from '../server/hooks-config.mjs';
-import { health, openBrowser, portBusy, startDetached, urlOf, waitHealth } from '../server/control.mjs';
+import { health, isStale, openBrowser, portBusy, startDetached, stopServer, urlOf, waitHealth } from '../server/control.mjs';
 import { fail, has, requireNode, say } from './common.mjs';
 
 requireNode();
@@ -54,6 +54,11 @@ try {
 const port = resolvePort(loadConfig());
 const url = urlOf(port);
 let h = await health(port);
+if (h && isStale(h)) {                                     // 다른 폴더(옛 설치)나 옛 버전의 서버가 떠 있다 — 끄고 새로
+  say(`옛 서버(${h.repo || '버전 ' + h.version})가 떠 있어 끄고 다시 켭니다.`, `An older server (${h.repo || 'version ' + h.version}) is running; restarting it.`);
+  await stopServer();
+  h = null;
+}
 if (!h) {
   if (await portBusy(port)) {
     fail(`포트 ${port} 를 다른 프로그램이 쓰고 있습니다. ${configFile()} 의 "port" 를 바꾼 뒤 다시 실행하세요.`,
