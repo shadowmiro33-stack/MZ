@@ -39,7 +39,8 @@
       "tab.work": "업무", "tab.proc": "업무 절차", "tab.people": "직원·팀", "tab.office": "사무실 설정", "col.more": "더",
       "work.proc": "절차서", "work.proc.none": "(없음 — 아래 글만)", "work.proc.hint": "업무 절차 탭에서 만든 절차를 고르면 \"그 절차대로\"가 자동으로 붙습니다",
       "work.when": "언제", "when.now": "지금 한 번", "when.daily": "매일 정해진 시각", "when.hourly": "매시간", "when.minutes": "N분마다", "work.cont": "지난 대화에 이어서",
-      "work.needAny": "절차를 고르거나 업무 내용을 적으세요", "work.scheduled": "반복 업무로 등록했습니다 — 아래 '반복 업무'에서 확인",
+      "work.needAny": "절차를 고르거나 업무 내용을 적으세요", "chat.people": "직원", "chat.ph": "업무를 적어 보내세요 — Ctrl+Enter. 질문에 답할 때도 여기에",
+      "chat.empty": "아직 대화가 없습니다. 아래에 첫 업무를 적어 보세요.", "chat.pick": "왼쪽에서 직원을 고르세요", "chat.running": "일하는 중…", "chat.answered": "답함", "chat.reply": "답하기", "chat.noReport": "(보고 없음 — 출력 보기)", "work.scheduled": "반복 업무로 등록했습니다 — 아래 '반복 업무'에서 확인",
       sched: "반복 업무", "sched.hint": "서버가 켜져 있는 동안 때가 되면 자동으로 보냅니다(Claude 세션이 시작될 때 서버도 켜집니다)",
       "sched.empty": "반복 업무가 없습니다", "sched.run": "지금 실행", "sched.on": "켜기", "sched.off": "끄기", "sched.del": "삭제",
       "sched.next": "다음", "sched.last": "최근", "sched.runs": "{n}회", "sched.daily": "매일 {t}", "sched.hourly": "매시간", "sched.minutes": "{n}분마다", "sched.once": "한 번",
@@ -93,7 +94,8 @@
       "tab.work": "Work", "tab.proc": "Procedures", "tab.people": "People & teams", "tab.office": "Office settings", "col.more": "More",
       "work.proc": "Procedure", "work.proc.none": "(none — text below only)", "work.proc.hint": "Pick a procedure from the Procedures tab and \"follow it\" is added automatically",
       "work.when": "When", "when.now": "Now, once", "when.daily": "Daily at a time", "when.hourly": "Every hour", "when.minutes": "Every N minutes", "work.cont": "Continue last conversation",
-      "work.needAny": "Pick a procedure or write a task", "work.scheduled": "Added as a recurring task — see 'Recurring' below",
+      "work.needAny": "Pick a procedure or write a task", "chat.people": "People", "chat.ph": "Write a task — Ctrl+Enter. Answer questions here too",
+      "chat.empty": "No conversation yet. Write the first task below.", "chat.pick": "Pick an employee on the left", "chat.running": "working…", "chat.answered": "answered", "chat.reply": "Reply", "chat.noReport": "(no report — show output)", "work.scheduled": "Added as a recurring task — see 'Recurring' below",
       sched: "Recurring", "sched.hint": "Runs automatically while the server is up (the server starts whenever a Claude session starts)",
       "sched.empty": "No recurring tasks", "sched.run": "Run now", "sched.on": "Enable", "sched.off": "Disable", "sched.del": "Delete",
       "sched.next": "next", "sched.last": "last", "sched.runs": "{n} runs", "sched.daily": "daily at {t}", "sched.hourly": "hourly", "sched.minutes": "every {n} min", "sched.once": "once",
@@ -362,7 +364,7 @@
   }
   // ---------- 업무 지시 ----------
   // 고를 수 있는 사람 = 사무실에 켜진 프로젝트(경로를 안다) + 명부에서 경로를 적어 둔 직원. 둘 다 없으면 직접 폴더 경로.
-  const W = { tasks: [], open: new Set(), timer: 0, demo: false, pick: null };
+  const W = { tasks: [], open: new Set(), timer: 0, demo: false, pick: null, replyTo: "" };
   function candidates() {
     const out = [];
     for (const p of S.seen) {
@@ -390,13 +392,19 @@
       const name = el("b", null, c.name);
       const meta = el("small", null, [c.team, c.live ? t("work.live") : t("work.listed")].filter(Boolean).join(" · "));
       const pth = el("span", "a-mono", c.path);
-      b.append(dot, name, meta, pth);
+      b.append(dot, name, meta);
+      const mine = W.tasks.filter(x => samePath(x.cwd, c.path));
+      const qs = mine.filter(x => x.question && !x.answeredBy).length, run = mine.filter(x => x.status === "running").length;
+      if (qs) b.append(el("span", "badge", `❓ ${qs}`));
+      else if (run) b.append(el("span", "badge run", t("chat.running")));
+      b.append(pth);
       b.title = c.path;
-      b.onclick = () => { W.pick = c.id; $("w-cwd").value = ""; renderPeople(); loadProcList(); };
+      b.onclick = () => { W.pick = c.id; $("w-cwd").value = ""; W.replyTo = ""; renderPeople(); loadProcList(); renderTasks(); };
       box.append(b);
     }
   }
-  $("w-cwd").addEventListener("input", () => { if ($("w-cwd").value.trim()) { W.pick = null; renderPeople(); } });
+  const samePath = (a, b) => String(a || "").replace(/[\\/]+$/, "").toLowerCase() === String(b || "").replace(/[\\/]+$/, "").toLowerCase();
+  $("w-cwd").addEventListener("input", () => { if ($("w-cwd").value.trim()) { W.pick = null; W.replyTo = ""; renderPeople(); renderTasks(); } });
   $("w-cwd").addEventListener("change", loadProcList);
   $("w-when").onchange = () => { $("w-time").hidden = $("w-when").value !== "daily"; $("w-min").hidden = $("w-when").value !== "minutes"; };
   async function loadProcList() {
@@ -451,7 +459,7 @@
     if (!who) { wstatus(t("work.needWho"), "err"); alert(t("work.needWho")); return; }
     if (!task && !$("w-proc").value) { wstatus(t("work.needAny"), "err"); $("w-task").focus(); alert(t("work.needAny")); return; }
     if (W.demo) { wstatus(t("work.demo"), "err"); alert(t("work.demo")); return; }
-    const mode = document.querySelector("input[name=w-mode]:checked")?.value || "acceptEdits";
+    const mode = $("w-mode").value || "acceptEdits";
     const procedure = $("w-proc").value, when = $("w-when").value, continueSession = $("w-cont").checked;
     $("w-send").disabled = true; wstatus("…");
     try {
@@ -460,11 +468,11 @@
         const r = await fetch("/api/admin/schedule", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify(sched) });
         const b = await r.json().catch(() => ({}));
         if (!r.ok || !b.ok) throw new Error(b.code === "demo" ? t("work.demo") : (b.error || String(r.status)));
-        $("w-task").value = ""; wstatus(t("work.scheduled"), "ok"); await loadScheds(); $("w-scheds").scrollIntoView({ behavior: "smooth", block: "start" });
+        $("w-task").value = ""; wstatus(t("work.scheduled"), "ok"); await loadScheds(); $("w-scheds").closest("details").open = true;
         return;
       }
       const res = await fetch("/api/admin/task", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" },
-        body: JSON.stringify({ who: who.who, cwd: who.cwd, key: who.key || "", task, mode, procedure, continueSession }) });
+        body: JSON.stringify({ who: who.who, cwd: who.cwd, key: who.key || "", task, mode, procedure, continueSession, replyTo: W.replyTo || "" }) });
       const body = await res.json().catch(() => ({}));
       if (!res.ok || !body.ok) {
         if (body.code === "notDir" && body.parent) {                     // 파일을 적었다 — 그 파일이 있는 폴더로 바꿔 준다
@@ -478,11 +486,9 @@
         alert(`${t("work.fail")}\n${msg}`);
         return;
       }
-      $("w-task").value = "";
-      wstatus(t("work.sent"), "ok");
-      W.open.add(body.task.id);
+      $("w-task").value = ""; W.replyTo = ""; $("w-task").placeholder = t("chat.ph");
+      wstatus("", "ok");
       await loadTasks();
-      $("w-tasks").scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (e) {
       wstatus(`${t("work.fail")} — ${e.message}`, "err");
       alert(`${t("work.fail")}\n${e.message}`);
@@ -502,36 +508,49 @@
     if (W.tasks.some(x => x.status === "running")) W.timer = setTimeout(loadTasks, 3000);
   }
   function renderTasks() {
+    renderPeople();
     const box = $("w-tasks");
     box.replaceChildren();
-    const running = W.tasks.filter(x => x.status === "running").length;
-    $("w-count").textContent = W.tasks.length ? `${W.tasks.length}` + (running ? ` · ${t("st.running")} ${running}` : "") : "";
-    if (!W.tasks.length) { box.append(el("li", "a-empty", t("work.empty"))); return; }
-    for (const x of W.tasks) {
-      const li = el("li", "a-task " + x.status);
-      const h = el("div", "h");
-      h.append(el("span", `a-chip ${x.status}`, t("st." + x.status)), el("b", null, x.who), el("time", null, x.startedAt.replace("T", " ").slice(5, 16)));
-      const open = W.open.has(x.id) || x.status === "running";
-      const toggle = el("button", "a-btn", open ? t("work.hide") : t("work.log")); toggle.type = "button";
-      toggle.onclick = () => { if (open) { W.open.delete(x.id); if (x.status === "running") W.open.add("!" + x.id); } else { W.open.add(x.id); W.open.delete("!" + x.id); } renderTasks(); };
-      h.append(toggle);
-      if (x.status === "running") {
-        const stop = el("button", "a-btn danger x", t("work.stop")); stop.type = "button";
-        stop.onclick = async () => { await fetch("/api/admin/task/stop", { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify({ id: x.id }) }); loadTasks(); };
-        h.append(stop);
-      } else {
-        const del = el("button", "a-btn x", t("work.del")); del.type = "button";
-        del.onclick = async () => { await fetch("/api/admin/task/delete", { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify({ id: x.id }) }); W.open.delete(x.id); loadTasks(); };
-        h.append(del);
-      }
-      li.append(h, el("p", "t", x.task.length > 300 ? x.task.slice(0, 300) + "…" : x.task));
-      const show = open && !W.open.has("!" + x.id);
-      if (show) {
-        const err = x.error ? `[error] ${/ENOENT/.test(x.error) ? t("work.noBin") + " (" + x.bin + ")" : x.error}\n` : "";
-        li.append(el("pre", null, err + (x.log || "") + (x.status === "running" ? "\n…" : "")));
-      }
-      box.append(li);
+    const who = picked();
+    $("c-name").textContent = who ? who.who : "—";
+    $("c-path").textContent = who ? who.cwd : "";
+    if (!who) { box.append(el("li", "a-empty-chat", t("chat.pick"))); $("w-count").textContent = ""; return; }
+    const mine = W.tasks.filter(x => samePath(x.cwd, who.cwd)).sort((a, b) => (a.startedAt < b.startedAt ? -1 : 1));
+    const running = mine.filter(x => x.status === "running").length;
+    $("w-count").textContent = mine.length ? `${mine.length}` + (running ? ` · ${t("st.running")} ${running}` : "") : "";
+    if (!mine.length) { box.append(el("li", "a-empty-chat", t("chat.empty"))); return; }
+    const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify(body) });
+    for (const x of mine) {
+      // 내 말풍선 — 보낸 업무(절차서 머리말은 📋 로 줄인다)
+      const me = el("li", "a-msg me");
+      const text = x.task.replace(/^먼저 이 폴더의 \.claude\/procedures\/(.+?)\.md 절차서를 읽어라[^\n]*\n*/, "📋 $1\n").trim();
+      me.append(el("div", "b", text.length > 600 ? text.slice(0, 600) + "…" : text));
+      const mm = el("div", "m");
+      mm.append(el("span", null, local(x.startedAt) + (x.schedule ? " · ⏰" : "") + (x.replyTo ? " · ↩" : "")));
+      if (x.status !== "running") { const d = el("button", null, t("work.del")); d.onclick = async () => { await post("/api/admin/task/delete", { id: x.id }); loadTasks(); }; mm.append(d); }
+      me.append(mm); box.append(me);
+      // 직원 말풍선 — 보고 / 질문 / 실패 / 일하는 중
+      const them = el("li", "a-msg them" + (x.question && !x.answeredBy ? " q" : "") + (x.status === "failed" || x.status === "error" ? " fail" : ""));
+      let body = "";
+      if (x.status === "running") body = t("chat.running");
+      else if (x.question) body = (x.report ? x.report + "\n\n" : "") + x.question;
+      else if (x.report) body = x.report;
+      else if (x.status === "error") body = `[error] ${/ENOENT/.test(x.error || "") ? t("work.noBin") : x.error}`;
+      else body = (x.log || "").trim().split("\n").slice(-6).join("\n") || t("chat.noReport");
+      const bb = el("div", "b", body);
+      if (x.status === "running") bb.classList.add("typing");
+      them.append(bb);
+      const tm = el("div", "m");
+      tm.append(el("span", `a-chip ${x.status}`, t("st." + x.status)));
+      if (x.question && x.answeredBy) tm.append(el("span", null, "✓ " + t("chat.answered")));
+      if (x.question && !x.answeredBy && x.status !== "running") { const r = el("button", null, t("chat.reply")); r.onclick = () => { W.replyTo = x.id; $("w-cont").checked = true; $("w-task").focus(); $("w-task").placeholder = "↩ " + t("chat.reply"); }; tm.append(r); }
+      const lg = el("button", null, W.open.has(x.id) ? t("work.hide") : t("work.log")); lg.onclick = () => { if (W.open.has(x.id)) W.open.delete(x.id); else W.open.add(x.id); renderTasks(); }; tm.append(lg);
+      if (x.status === "running") { const st = el("button", null, t("work.stop")); st.onclick = async () => { await post("/api/admin/task/stop", { id: x.id }); loadTasks(); }; tm.append(st); }
+      them.append(tm);
+      if (W.open.has(x.id)) them.append(el("pre", null, (x.log || "") + (x.status === "running" ? "\n…" : "")));
+      box.append(them);
     }
+    box.scrollTop = box.scrollHeight;
   }
   $("w-send").onclick = sendWork;
   $("w-clear").onclick = async () => {

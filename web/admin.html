@@ -29,51 +29,53 @@
 </header>
 
 <main id="a-main">
-  <!-- ===== 업무 ===== -->
+  <!-- ===== 업무(대화) ===== -->
   <section class="a-tab" data-tab="work">
-    <div class="a-card">
-      <h2 data-t="work.step1">1. 누구에게?</h2>
-      <p class="a-hint" data-t="work.step1.hint">사무실에 켜져 있는 프로젝트는 바로 고를 수 있습니다. 다른 폴더는 아래에 경로를 적으세요.</p>
-      <div id="w-people" class="a-people"></div>
-      <label class="a-inline"><span data-t="work.other">다른 폴더</span><input id="w-cwd" type="text" placeholder="C:\work\프로젝트" spellcheck="false"></label>
-    </div>
-    <div class="a-card">
-      <h2 data-t="work.step2">2. 무슨 일을?</h2>
-      <div class="a-grid">
-        <label><span data-t="work.proc">절차서</span><select id="w-proc"><option value="" data-t="work.proc.none">(없음 — 아래 글만)</option></select><small data-t="work.proc.hint">업무 절차 탭에서 만든 절차를 고르면 "그 절차대로"가 자동으로 붙습니다</small></label>
-        <label><span data-t="work.when">언제</span>
-          <select id="w-when">
-            <option value="now" data-t="when.now">지금 한 번</option>
-            <option value="daily" data-t="when.daily">매일 정해진 시각</option>
-            <option value="hourly" data-t="when.hourly">매시간</option>
-            <option value="minutes" data-t="when.minutes">N분마다</option>
-          </select>
-          <span class="a-when-x">
+    <div class="a-chatwrap">
+      <!-- 왼쪽: 직원 목록 -->
+      <aside class="a-roster">
+        <h2 data-t="chat.people">직원</h2>
+        <div id="w-people" class="a-people col"></div>
+        <label class="a-inline col"><span data-t="work.other">다른 폴더</span><input id="w-cwd" type="text" placeholder="C:\work\프로젝트" spellcheck="false"></label>
+        <details class="a-adv">
+          <summary data-t="sched">반복 업무</summary>
+          <ul id="w-scheds" class="a-tasks"></ul>
+        </details>
+      </aside>
+      <!-- 오른쪽: 대화 -->
+      <section class="a-chat">
+        <header class="a-chat-head">
+          <div><b id="c-name">—</b> <small id="c-path" class="a-mono"></small></div>
+          <div class="a-chat-ops">
+            <span id="w-count"></span>
+            <button type="button" id="w-clear" class="a-btn small-inline" data-t="work.clear">끝난 업무 비우기</button>
+          </div>
+        </header>
+        <ol id="w-tasks" class="a-msgs"></ol>
+        <footer class="a-composer">
+          <textarea id="w-task" rows="3" data-t-ph="chat.ph" placeholder="업무를 적어 보내세요 — Ctrl+Enter"></textarea>
+          <div class="a-composer-row">
+            <select id="w-proc" title="절차서"><option value="" data-t="work.proc.none">(절차서 없음)</option></select>
+            <select id="w-mode" title="권한">
+              <option value="acceptEdits" data-t="mode.acceptEdits">파일만 고치기</option>
+              <option value="auto" data-t="mode.auto">명령도 실행</option>
+              <option value="plan" data-t="mode.plan">계획만</option>
+              <option value="bypass" data-t="mode.bypass">전부 자동 승인</option>
+            </select>
+            <select id="w-when" title="언제">
+              <option value="now" data-t="when.now">지금 한 번</option>
+              <option value="daily" data-t="when.daily">매일 정해진 시각</option>
+              <option value="hourly" data-t="when.hourly">매시간</option>
+              <option value="minutes" data-t="when.minutes">N분마다</option>
+            </select>
             <input id="w-time" type="time" value="07:00" hidden>
             <input id="w-min" type="number" min="5" max="1440" step="5" value="60" hidden>
-            <label class="a-check-sm"><input id="w-cont" type="checkbox"><span data-t="work.cont">지난 대화에 이어서</span></label>
-          </span>
-        </label>
-      </div>
-      <textarea id="w-task" rows="5" data-t-ph="work.task.ph" placeholder="예: README 를 읽고 프로젝트 구조를 docs/STRUCTURE.md 에 정리해줘"></textarea>
-      <div class="a-modes" role="radiogroup">
-        <label class="a-mode"><input type="radio" name="w-mode" value="acceptEdits" checked><span><b data-t="mode.acceptEdits">파일만 고치기</b><small data-t="mode.acceptEdits.d">코드를 읽고 고칩니다. 명령 실행(빌드·테스트·git)은 하지 않습니다 — 가장 안전</small></span></label>
-        <label class="a-mode"><input type="radio" name="w-mode" value="auto"><span><b data-t="mode.auto">명령도 실행</b><small data-t="mode.auto.d">빌드·테스트처럼 안전한 명령은 알아서 실행합니다(자동 모드)</small></span></label>
-        <label class="a-mode"><input type="radio" name="w-mode" value="plan"><span><b data-t="mode.plan">계획만</b><small data-t="mode.plan.d">파일을 건드리지 않고 무엇을 할지만 정리합니다</small></span></label>
-        <label class="a-mode danger"><input type="radio" name="w-mode" value="bypass"><span><b data-t="mode.bypass">전부 자동 승인</b><small data-t="mode.bypass.d">모든 명령을 묻지 않고 실행 — 믿을 수 있는 폴더에서만</small></span></label>
-      </div>
-      <div class="a-actions">
-        <button type="button" id="w-send" class="a-btn primary big" data-t="work.send">업무 보내기</button>
-        <span id="w-status" class="a-status"></span>
-      </div>
-    </div>
-    <div class="a-card" id="sched-card">
-      <h2><span data-t="sched">반복 업무</span> <small data-t="sched.hint">서버가 켜져 있는 동안 때가 되면 자동으로 보냅니다(Claude 세션이 시작될 때 서버도 켜집니다)</small></h2>
-      <ul id="w-scheds" class="a-tasks"></ul>
-    </div>
-    <div class="a-card">
-      <h2><span data-t="work.list">업무 목록</span> <small id="w-count"></small><button type="button" id="w-clear" class="a-btn small-inline" data-t="work.clear">끝난 업무 비우기</button></h2>
-      <ul id="w-tasks" class="a-tasks"></ul>
+            <label class="a-check-sm"><input id="w-cont" type="checkbox" checked><span data-t="work.cont">이어서</span></label>
+            <button type="button" id="w-send" class="a-btn primary" data-t="work.send">보내기</button>
+          </div>
+          <span id="w-status" class="a-status"></span>
+        </footer>
+      </section>
     </div>
   </section>
 

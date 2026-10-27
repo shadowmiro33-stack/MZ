@@ -173,7 +173,7 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
           if (typeof body.procedure === 'string' && body.procedure) parts.push(procedurePrompt(body.procedure));
           if (typeof body.task === 'string' && body.task.trim()) parts.push(body.task);
           const rec = startTask({ who: body.who || key, cwd, task: parts.join('\n\n'), mode: body.mode, model: body.model, continueSession: !!body.continueSession,
-            systemPrompt: profilePrompt(cfg, key || path.basename(cwd)) });
+            systemPrompt: profilePrompt(cfg, key || path.basename(cwd)), replyTo: typeof body.replyTo === 'string' ? body.replyTo : '' });
           return sendJson(res, 200, { ok: true, task: rec });
         } catch (e) {
           return sendJson(res, 400, { error: e.message, code: e.code || 'bad', parent: e.parent || '' });

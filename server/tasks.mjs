@@ -32,8 +32,18 @@ export function claudeBin() {
   return 'claude';
 }
 
-const PROMPT = '표준 입력(stdin)으로 받은 업무 지시를 이 폴더에서 수행하세요. 끝나면 무엇을 했는지 한국어로 짧게 정리하세요. '
-  + 'Carry out the task given on stdin in this directory, then summarize briefly in Korean what you did.';
+const PROMPT = '표준 입력(stdin)으로 받은 업무 지시를 이 폴더에서 수행하세요. 답의 마지막은 반드시 이 형식으로: '
+  + '"## 보고" 제목 아래 무엇을 했고 결과가 어디 있는지 한국어로 3~6줄. 사람이 정해 줘야 진행할 수 있는 것이 있으면 "## 질문" 제목 아래 번호를 붙여 적고 거기서 멈추세요. '
+  + 'Carry out the task given on stdin in this directory. End with "## 보고" (3-6 lines in Korean: what you did, where the result is) and, only if you need a human decision, "## 질문" with numbered questions.';
+
+/** 출력 꼬리에서 보고·질문을 뽑는다 — 화면이 대화창에 말풍선으로 보여 준다 */
+export function parseReport(log) {
+  const s = String(log || '');
+  const rep = s.match(/##\s*보고\s*\n([\s\S]*?)(?=\n##\s*질문|$)/);
+  const q = s.match(/##\s*질문\s*\n([\s\S]*?)$/);
+  const clean = (x) => (x ? x.trim().replace(/\n{3,}/g, '\n\n').slice(0, 4000) : '');
+  return { report: clean(rep && rep[1]), question: clean(q && q[1]) };
+}
 
 function idNow() {
   const d = new Date();
@@ -50,7 +60,7 @@ function save(rec) {
 }
 
 /** 업무 시작. who = 표시용(직원 이름), cwd = 프로젝트 폴더(있어야 함) */
-export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '', continueSession = false, schedule = '', systemPrompt = '' }) {
+export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '', continueSession = false, schedule = '', systemPrompt = '', replyTo = '' }) {
   cwd = String(cwd || '').trim().replace(/^["']+|["']+$/g, '');          // 탐색기에서 복사하면 따옴표가 붙는다
   if (!cwd || !fs.existsSync(cwd)) { const e = new Error('폴더가 없습니다 / folder not found: ' + cwd); e.code = 'noDir'; throw e; }
   if (!fs.statSync(cwd).isDirectory()) {                                   // 파일을 적었다 — 그 파일이 있는 폴더를 제안
@@ -70,9 +80,13 @@ export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '', co
     cwd, windowsHide: true, stdio: ['pipe', out, out],
     shell: IS_WIN && /\.cmd$|\.bat$/i.test(bin), env: { ...process.env, CLAUDE_OFFICE_TASK: id },
   });
-  const rec = { id, who: String(who || path.basename(cwd)), cwd, task: task.slice(0, MAX_TASK), mode, model: model || '', continueSession: !!continueSession, schedule: schedule || '', profile: !!systemPrompt,
+  const rec = { id, who: String(who || path.basename(cwd)), cwd, task: task.slice(0, MAX_TASK), mode, model: model || '', continueSession: !!continueSession, schedule: schedule || '', profile: !!systemPrompt, replyTo: replyTo || '',
     pid: child.pid, startedAt: new Date().toISOString(), endedAt: null, exitCode: null, error: null, bin };
   save(rec);
+  if (replyTo && /^[\w-]+$/.test(replyTo)) {                                             // 질문에 답했다 — 원 업무에 표시
+    const orig = readRec(replyTo);
+    if (orig) { orig.answeredBy = id; save(orig); }
+  }
   live.set(id, child);
   child.on('error', (e) => { rec.error = e.message; rec.endedAt = new Date().toISOString(); rec.exitCode = -1; save(rec); live.delete(id); try { fs.closeSync(out); } catch { /* 이미 닫힘 */ } });
   child.on('exit', (code, sig) => { rec.endedAt = new Date().toISOString(); rec.exitCode = code ?? (sig ? -2 : -1); save(rec); live.delete(id); try { fs.closeSync(out); } catch { /* 이미 닫힘 */ } });
@@ -120,7 +134,7 @@ function tail(id) {
 }
 
 /** 업무 목록(최신 먼저) + 로그 꼬리. 서버가 재시작됐으면 살아 있는 pid 로 running 을 판단 */
-export function listTasks(limit = 30) {
+export function listTasks(limit = 60) {
   let files = [];
   try {
     files = fs.readdirSync(tasksDir()).filter((f) => f.endsWith('.json') && !f.endsWith('.tmp')).sort().reverse().slice(0, limit);
@@ -129,7 +143,9 @@ export function listTasks(limit = 30) {
   }
   return files.map((f) => readRec(f.slice(0, -5))).filter(Boolean).map((rec) => {
     const running = live.has(rec.id) || (!rec.endedAt && rec.pid && pidAlive(rec.pid));
-    return { ...rec, status: running ? 'running' : rec.error ? 'error' : rec.exitCode === 0 ? 'done' : rec.endedAt ? 'failed' : 'done', log: tail(rec.id) };
+    const log = tail(rec.id);
+    const { report, question } = running ? { report: '', question: '' } : parseReport(log);
+    return { ...rec, status: running ? 'running' : rec.error ? 'error' : rec.exitCode === 0 ? 'done' : rec.endedAt ? 'failed' : 'done', log, report, question };
   });
 }
 

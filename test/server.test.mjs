@@ -388,3 +388,23 @@ test('직원 프로필: role 이 시스템 프롬프트로 claude 에 붙는다'
     delete process.env.CLAUDE_BIN;
   }
 });
+
+test('보고·질문 파싱과 답장 연결', async () => {
+  const { parseReport } = await import('../server/tasks.mjs');
+  const r = parseReport('작업…\n## 보고\n했다.\n결과는 docs/.\n\n## 질문\n1. 한국어?\n2. 커밋?\n');
+  assert.equal(r.report, '했다.\n결과는 docs/.');
+  assert.equal(r.question, '1. 한국어?\n2. 커밋?');
+  assert.deepEqual(parseReport('## 보고\n끝.'), { report: '끝.', question: '' });
+  assert.deepEqual(parseReport('아무 형식 없음'), { report: '', question: '' });
+  if (fs.existsSync(path.join(tmp, 'fake-claude.mjs'))) {
+    process.env.CLAUDE_BIN = path.join(tmp, process.platform === 'win32' ? 'claude.cmd' : 'claude');
+    const proj = path.join(tmp, 'proj'); fs.mkdirSync(proj, { recursive: true });
+    const good = { 'Content-Type': 'application/json', 'X-Office-Admin': '1' };
+    const a = JSON.parse((await req(port, '/api/admin/task', { method: 'POST', headers: good, body: JSON.stringify({ cwd: proj, task: 'q' }) })).body).task;
+    const b = JSON.parse((await req(port, '/api/admin/task', { method: 'POST', headers: good, body: JSON.stringify({ cwd: proj, task: 'a', replyTo: a.id, continueSession: true }) })).body).task;
+    assert.equal(b.replyTo, a.id); assert.ok(b.continueSession);
+    const list = JSON.parse((await req(port, '/api/admin/tasks')).body).tasks;
+    assert.equal(list.find((x) => x.id === a.id).answeredBy, b.id);
+    delete process.env.CLAUDE_BIN;
+  }
+});
