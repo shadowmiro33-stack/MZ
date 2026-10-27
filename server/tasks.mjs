@@ -183,3 +183,14 @@ function prune() {
     }
   } catch { /* 정리는 실패해도 된다 */ }
 }
+
+/** 답하지 않은 질문 — { pathKey(cwd): { id, who, question, at } } (가장 최근 하나). 사무실 화면이 그 캐릭터를 폴짝 뛰게 한다 */
+export function openQuestions(pathKeyFn) {
+  const out = {};
+  for (const x of listTasks(60)) {
+    if (x.status === 'running' || !x.question || x.answeredBy) continue;
+    const k = pathKeyFn(x.cwd);
+    if (!out[k] || out[k].at < x.endedAt) out[k] = { id: x.id, who: x.who, question: x.question.split('\n')[0].slice(0, 80), at: x.endedAt || x.startedAt };
+  }
+  return out;
+}

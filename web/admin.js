@@ -697,7 +697,15 @@
     applyText();
     let tab = "work";
     try { tab = localStorage.getItem("office.admin.tab") || "work"; } catch { /* 무시 */ }
-    showTab(["work", "proc", "people", "office"].includes(tab) ? tab : "work");
+    const m = location.hash.match(/^#chat=(.+)$/);
+    showTab(m ? "work" : (["work", "proc", "people", "office"].includes(tab) ? tab : "work"));
     await load();
+    if (m) {                                                            // 사무실에서 "답하기" 로 들어왔다 — 그 직원 대화를 연다
+      const want = decodeURIComponent(m[1]);
+      const c = candidates().find(x => samePath(x.path, want));
+      if (c) { W.pick = c.id; $("w-cwd").value = ""; } else { $("w-cwd").value = want; W.pick = null; }
+      renderPeople(); loadProcList(); renderTasks();
+      history.replaceState(null, "", location.pathname);
+    }
   })();
 })();
