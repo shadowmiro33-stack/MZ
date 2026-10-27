@@ -49,7 +49,7 @@ function transcript(cwd, sid, rows) {
 function putCard(sid, card) {
   fs.writeFileSync(path.join(process.env.CLAUDE_OFFICE_HOME, 'sessions', `${sid}.json`), JSON.stringify({ sessionId: sid, ...card }));
 }
-const snap = (cfg = {}, more = {}) => buildSnapshot({ cfg: normalizeConfig(cfg), starts: STARTS, ...more });
+const snap = (cfg = {}, more = {}) => buildSnapshot({ cfg: normalizeConfig(cfg), starts: STARTS, asks: {}, ...more });
 const live = { pid: 4242, pidStart: START };
 const read = (f) => ({ type: 'tool_use', name: 'Read', input: { file_path: f } });
 
@@ -65,7 +65,7 @@ test('형식: 최상위·Person 필드 전부', async () => {
   assert.ok(!Number.isNaN(Date.parse(s.now)));
   assert.equal(s.people.length, 1);
   const p = s.people[0];
-  assert.deepEqual(Object.keys(p).sort(), ['ask', 'color', 'commits', 'doing', 'folder', 'home', 'id', 'kid', 'kind', 'log', 'name', 'path', 'pending', 'sessions', 'source', 'status', 'subCount', 'subs', 'team', 'title'].sort());
+  assert.deepEqual(Object.keys(p).sort(), ['ask', 'askTask', 'color', 'commits', 'doing', 'folder', 'home', 'id', 'kid', 'kind', 'log', 'name', 'path', 'pending', 'sessions', 'source', 'status', 'subCount', 'subs', 'team', 'title'].sort());
   assert.equal(p.id, path.resolve(cwd));
   assert.equal(p.name, 'my-app');
   assert.equal(p.folder, 'my-app');
@@ -317,4 +317,17 @@ test('청소: 하루 넘은 ended 카드·7일 넘은 카드 파일을 치운다
   putCard('ok', { kind: 'rest', updatedAt: iso(1000) });
   assert.equal(cleanupCards(), 2);
   assert.deepEqual(fs.readdirSync(dir).sort(), ['endedNew.json', 'ok.json']);
+});
+
+test('관리자 질문이 답 없이 남아 있으면 그 폴더 캐릭터가 승인 대기(질문)로 선다 — 세션이 없어도', async () => {
+  const base = fresh();
+  const cwd = folder(base, 'asker');
+  const { pathKey } = await import('../server/paths.mjs');
+  const s = await snap({}, { asks: { [pathKey(cwd)]: { id: 'T1', who: '개굴', question: '한국어로 쓸까요?', at: iso(0) } } });
+  assert.equal(s.people.length, 1);
+  assert.equal(s.people[0].status, 'decision');
+  assert.equal(s.people[0].ask, '질문: 한국어로 쓸까요?');
+  assert.equal(s.people[0].askTask, 'T1');
+  assert.equal(s.people[0].source, 'task');
+  assert.equal(s.people[0].sessions, 0);
 });

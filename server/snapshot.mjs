@@ -9,6 +9,7 @@ import { cleanupCards, mtimeOf, readCards, recentTranscripts, transcriptFor } fr
 import { LOG_N, MAX_SUBS, oneLine, readTranscript, runningSubagents } from './activity.mjs';
 import { installedEvents } from './hooks-config.mjs';
 import { decorate, homeOf, isHidden } from './staff.mjs';
+import { openQuestions } from './tasks.mjs';
 
 export const API_VERSION = 1;
 const GIT_TTL_MS = 10 * 60 * 1000; // 루트·커밋 수는 10분 캐시 — git 을 3초마다 두드리지 않게
@@ -153,27 +154,39 @@ export async function buildSnapshot(opts = {}) {
     groups.get(key).items.push(s);
   }
 
+  // 관리자 업무에서 답 안 한 질문이 있는 폴더 — 세션이 없어도 캐릭터를 세워 질문을 알린다
+  const asks = opts.asks !== undefined ? opts.asks : openQuestions(pathKey);
+  for (const [k, q] of Object.entries(asks)) {
+    if (groups.has(k)) continue;
+    const root = [...cwds].map((c) => roots.get(c)).find((r) => pathKey(r) === k) || null;
+    const dir = root || Object.keys(asks).length ? k : null;
+    if (!dir) continue;
+    groups.set(k, { root: fs.existsSync(dir) ? path.resolve(dir) : dir, items: [], ask: q });
+  }
   const people = [];
-  for (const [key, { root, items }] of groups) {
+  for (const [key, { root, items, ask }] of groups) {
     const base = path.basename(root) || root;
     if (isHidden(cfg, base, key)) continue;
-    const status = items.map((s) => s.status).sort((a, b) => PRIORITY[a] - PRIORITY[b])[0];
-    const asks = items.filter((s) => s.status === 'decision').sort((a, b) => b.at - a.at);
+    const q = ask || asks[key];
+    let status = items.length ? items.map((s) => s.status).sort((a, b) => PRIORITY[a] - PRIORITY[b])[0] : 'rest';
+    const askItems = items.filter((s) => s.status === 'decision').sort((a, b) => b.at - a.at);
+    if (q) status = 'decision';                                   // 관리자 질문 = 승인 대기처럼 폴짝
     const commits = await commitCount(root, now);
     const subs = items.flatMap((s) => runningSubagents(s.transcript, now));
     // 한 프로젝트에 대화가 둘 이상이면(탭·/clear 직후) 가장 최근에 움직인 쪽이 '지금 하는 일'
     const lastAt = (s) => (s.info.log.length ? s.info.log[s.info.log.length - 1].at : '');
-    const latest = items.reduce((a, b) => (lastAt(b) > lastAt(a) ? b : a));
+    const latest = items.length ? items.reduce((a, b) => (lastAt(b) > lastAt(a) ? b : a)) : { info: { doing: null } };
     const log = items.flatMap((s) => s.info.log).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0)).slice(-LOG_N);
     people.push(decorate({
       id: root,
       name: base,
       path: root,
       status,
-      pending: asks.length,
-      ask: asks.length ? asks[0].ask : '',
+      pending: askItems.length + (q ? 1 : 0),
+      ask: q ? `질문: ${q.question}` : askItems.length ? askItems[0].ask : '',
+      askTask: q ? q.id : '',
       sessions: items.length,
-      source: items.some((s) => s.source === 'hook') ? 'hook' : 'transcript',
+      source: items.some((s) => s.source === 'hook') ? 'hook' : items.length ? 'transcript' : 'task',
       commits,
       kid: commits !== null && commits < cfg.kidCommits,
       home: homeOf(cfg, base, key),
