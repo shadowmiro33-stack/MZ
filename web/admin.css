@@ -148,3 +148,6 @@ textarea:focus { outline: 2px solid var(--sub); outline-offset: -1px; }
 .a-sched .h .next { color: var(--ink3); font-size: 12px; }
 .a-sched.off { opacity: .6; }
 @media (max-width: 720px) { .a-step { grid-template-columns: 1fr; } }
+
+.a-btn.small-inline { margin-left: auto; min-height: 26px; padding: 0 10px; font-size: 12px; }
+.a-card h2 { align-items: center; }

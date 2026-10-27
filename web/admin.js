@@ -53,7 +53,7 @@
       "work.none": "사무실에 켜진 프로젝트가 없습니다 — 아래에 폴더 경로를 적거나, 직원·팀 탭에서 직원에게 경로를 적어 두세요",
       "work.sent": "보냈습니다 — 사무실 탭에서 캐릭터가 일하는 걸 보세요",
       "work.needWho": "먼저 직원을 고르거나 폴더 경로를 적으세요", "work.needTask": "업무 내용을 적으세요",
-      "work.fail": "보내지 못했습니다", "work.empty": "아직 보낸 업무가 없습니다", "work.stop": "중지", "work.log": "출력 보기", "work.hide": "출력 닫기",
+      "work.fail": "보내지 못했습니다", "work.empty": "아직 보낸 업무가 없습니다", "work.stop": "중지", "work.log": "출력 보기", "work.hide": "출력 닫기", "work.del": "삭제", "work.clear": "끝난 업무 비우기", "work.clearConfirm": "끝난 업무 기록을 모두 지울까요? (실행 중인 것은 남습니다)",
       "work.demo": "데모 서버에서는 업무를 보낼 수 없습니다 — 실제 서버(127.0.0.1:4777)에서 하세요",
       "work.noBin": "claude 실행 파일을 찾지 못했습니다 — Claude Code 가 설치돼 있고 PATH 에 있는지 확인하세요",
       "work.noDir": "그 폴더가 없습니다", "work.notDir": "파일이 아니라 폴더가 필요합니다 — 그 파일이 있는 폴더로 바꿨습니다",
@@ -105,7 +105,7 @@
       "work.none": "No project is open in the office — type a folder path below, or give an employee a path in People & teams",
       "work.sent": "Sent — watch the character work in the office tab",
       "work.needWho": "Pick an employee or type a folder path first", "work.needTask": "Write the task",
-      "work.fail": "Could not send", "work.empty": "No tasks yet", "work.stop": "Stop", "work.log": "Show output", "work.hide": "Hide output",
+      "work.fail": "Could not send", "work.empty": "No tasks yet", "work.stop": "Stop", "work.log": "Show output", "work.hide": "Hide output", "work.del": "Delete", "work.clear": "Clear finished", "work.clearConfirm": "Delete all finished task records? (running ones stay)",
       "work.demo": "The demo server cannot run tasks — use the real server (127.0.0.1:4777)",
       "work.noBin": "Could not find the claude executable — check that Claude Code is installed and on PATH",
       "work.noDir": "That folder does not exist", "work.notDir": "A folder is needed, not a file — switched to the file's folder",
@@ -500,6 +500,10 @@
         const stop = el("button", "a-btn danger x", t("work.stop")); stop.type = "button";
         stop.onclick = async () => { await fetch("/api/admin/task/stop", { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify({ id: x.id }) }); loadTasks(); };
         h.append(stop);
+      } else {
+        const del = el("button", "a-btn x", t("work.del")); del.type = "button";
+        del.onclick = async () => { await fetch("/api/admin/task/delete", { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify({ id: x.id }) }); W.open.delete(x.id); loadTasks(); };
+        h.append(del);
       }
       li.append(h, el("p", "t", x.task.length > 300 ? x.task.slice(0, 300) + "…" : x.task));
       const show = open && !W.open.has("!" + x.id);
@@ -511,6 +515,11 @@
     }
   }
   $("w-send").onclick = sendWork;
+  $("w-clear").onclick = async () => {
+    if (!confirm(t("work.clearConfirm"))) return;
+    await fetch("/api/admin/tasks/clear", { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: "{}" });
+    W.open.clear(); loadTasks();
+  };
   $("w-task").addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") sendWork(); });
 
   // ---------- 업무 절차 편집 ----------

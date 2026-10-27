@@ -11,7 +11,7 @@ import { createDemo } from './demo.mjs';
 import { decorate, homeOf, isHidden } from './staff.mjs';
 import { REPO_DIR, pathKey } from './paths.mjs';
 import { APP, health, openBrowser, removePidFile, urlOf } from './control.mjs';
-import { listTasks, startTask, stopTask } from './tasks.mjs';
+import { clearTasks, deleteTask, listTasks, startTask, stopTask } from './tasks.mjs';
 import { deleteProcedure, imagePath, listProcedures, procedurePrompt, readProcedure, saveProcedure } from './procedures.mjs';
 import { deleteSchedule, listSchedules, runSchedule, startScheduler, upsertSchedule } from './schedules.mjs';
 import { staffFor } from './staff.mjs';
@@ -204,6 +204,8 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
           return sendJson(res, 400, { error: e.message });
         }
       }
+      if (adminWrite && route === '/api/admin/task/delete') return sendJson(res, 200, { ok: deleteTask(String(body.id || '')) });
+      if (adminWrite && route === '/api/admin/tasks/clear') return sendJson(res, 200, { ok: true, removed: clearTasks() });
       if (adminWrite && route === '/api/admin/task/stop') {
         const r = stopTask(String(body.id || ''));
         return sendJson(res, r.ok ? 200 : 404, r);

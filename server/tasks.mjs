@@ -132,6 +132,29 @@ export function listTasks(limit = 30) {
   });
 }
 
+/** 업무 기록 하나 삭제(실행 중이면 먼저 멈춘다) */
+export function deleteTask(id) {
+  if (!/^[\w-]+$/.test(String(id))) return false;
+  if (live.has(id)) stopTask(id);
+  const had = fs.existsSync(recFile(id));
+  fs.rmSync(recFile(id), { force: true }); fs.rmSync(logFile(id), { force: true });
+  return had;
+}
+/** 끝난 업무 전부 삭제(실행 중은 남긴다). 돌려주는 값 = 지운 개수 */
+export function clearTasks() {
+  let n = 0;
+  try {
+    for (const f of fs.readdirSync(tasksDir())) {
+      if (!f.endsWith('.json')) continue;
+      const id = f.slice(0, -5);
+      const rec = readRec(id);
+      if (!rec || live.has(id) || (!rec.endedAt && rec.pid && pidAlive(rec.pid))) continue;
+      fs.rmSync(recFile(id), { force: true }); fs.rmSync(logFile(id), { force: true }); n++;
+    }
+  } catch { /* 폴더 없음 */ }
+  return n;
+}
+
 /** 오래된 기록 정리 — 최근 KEEP 개만 */
 function prune() {
   try {
