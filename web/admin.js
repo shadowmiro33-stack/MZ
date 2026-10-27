@@ -44,7 +44,8 @@
       "work.fail": "보내지 못했습니다", "work.empty": "아직 보낸 업무가 없습니다", "work.stop": "중지", "work.log": "출력 보기", "work.hide": "출력 닫기",
       "work.demo": "데모 서버에서는 업무를 보낼 수 없습니다 — 실제 서버(127.0.0.1:4777)에서 하세요",
       "work.noBin": "claude 실행 파일을 찾지 못했습니다 — Claude Code 가 설치돼 있고 PATH 에 있는지 확인하세요",
-      "work.noDir": "그 폴더가 없습니다",
+      "work.noDir": "그 폴더가 없습니다", "work.notDir": "파일이 아니라 폴더가 필요합니다 — 그 파일이 있는 폴더로 바꿨습니다",
+      "work.notDir.alert": "업무는 파일이 아니라 폴더(프로젝트)에서 합니다.\n그 파일이 있는 폴더로 바꿔 넣었어요:\n{p}\n\n맞으면 업무 보내기를 다시 누르세요.",
       "mode.acceptEdits": "파일만 고치기", "mode.acceptEdits.d": "코드를 읽고 고칩니다. 명령 실행(빌드·테스트·git)은 하지 않습니다 — 가장 안전",
       "mode.auto": "명령도 실행", "mode.auto.d": "빌드·테스트처럼 안전한 명령은 알아서 실행합니다(자동 모드)",
       "mode.plan": "계획만", "mode.plan.d": "파일을 건드리지 않고 무엇을 할지만 정리합니다",
@@ -83,7 +84,8 @@
       "work.fail": "Could not send", "work.empty": "No tasks yet", "work.stop": "Stop", "work.log": "Show output", "work.hide": "Hide output",
       "work.demo": "The demo server cannot run tasks — use the real server (127.0.0.1:4777)",
       "work.noBin": "Could not find the claude executable — check that Claude Code is installed and on PATH",
-      "work.noDir": "That folder does not exist",
+      "work.noDir": "That folder does not exist", "work.notDir": "A folder is needed, not a file — switched to the file's folder",
+      "work.notDir.alert": "Tasks run in a folder (project), not a file.\nSwitched to the folder that contains it:\n{p}\n\nPress Send again if that is right.",
       "mode.acceptEdits": "Edit files only", "mode.acceptEdits.d": "Reads and edits code. No commands (build, test, git) — safest",
       "mode.auto": "Also run commands", "mode.auto.d": "Runs safe commands like builds and tests on its own (auto mode)",
       "mode.plan": "Plan only", "mode.plan.d": "Touches nothing; writes up what it would do",
@@ -354,30 +356,41 @@
   $("w-cwd").addEventListener("input", () => { if ($("w-cwd").value.trim()) { W.pick = null; renderPeople(); } });
   function picked() {
     const typed = $("w-cwd").value.trim();
-    if (typed) return { who: typed.split(/[\\/]/).filter(Boolean).pop() || typed, cwd: typed };
+    if (typed) { const c = typed.replace(/^["\']+|["\']+$/g, ""); return { who: c.split(/[\\/]/).filter(Boolean).pop() || c, cwd: c }; }
     const c = candidates().find(x => x.id === W.pick);
     return c ? { who: c.name, cwd: c.path, key: c.folder } : null;
   }
   async function sendWork() {
     const who = picked(), task = $("w-task").value.trim();
-    if (!who) return wstatus(t("work.needWho"), "err");
-    if (!task) { wstatus(t("work.needTask"), "err"); $("w-task").focus(); return; }
-    if (W.demo) return wstatus(t("work.demo"), "err");
+    if (!who) { wstatus(t("work.needWho"), "err"); alert(t("work.needWho")); return; }
+    if (!task) { wstatus(t("work.needTask"), "err"); $("w-task").focus(); alert(t("work.needTask")); return; }
+    if (W.demo) { wstatus(t("work.demo"), "err"); alert(t("work.demo")); return; }
     const mode = document.querySelector("input[name=w-mode]:checked")?.value || "acceptEdits";
     $("w-send").disabled = true; wstatus("…");
     try {
       const res = await fetch("/api/admin/task", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" },
         body: JSON.stringify({ who: who.who, cwd: who.cwd, key: who.key || "", task, mode }) });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok || !body.ok) throw new Error(body.error || String(res.status));
+      if (!res.ok || !body.ok) {
+        if (body.code === "notDir" && body.parent) {                     // 파일을 적었다 — 그 파일이 있는 폴더로 바꿔 준다
+          $("w-cwd").value = body.parent; W.pick = null; renderPeople();
+          wstatus(t("work.notDir"), "err");
+          alert(t("work.notDir.alert", { p: body.parent }));
+          return;
+        }
+        const msg = body.code === "noDir" ? `${t("work.noDir")}: ${who.cwd}` : body.code === "demo" ? t("work.demo") : (body.error || String(res.status));
+        wstatus(`${t("work.fail")} — ${msg}`, "err");
+        alert(`${t("work.fail")}\n${msg}`);
+        return;
+      }
       $("w-task").value = "";
       wstatus(t("work.sent"), "ok");
       W.open.add(body.task.id);
       await loadTasks();
       $("w-tasks").scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (e) {
-      const m = String(e.message || "");
-      wstatus(`${t("work.fail")} — ${/folder not found/.test(m) ? t("work.noDir") + ": " + who.cwd : m}`, "err");
+      wstatus(`${t("work.fail")} — ${e.message}`, "err");
+      alert(`${t("work.fail")}\n${e.message}`);
     } finally {
       $("w-send").disabled = false;
     }

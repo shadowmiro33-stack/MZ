@@ -157,7 +157,7 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
       }
       if (adminWrite && route === '/api/admin/task') {
         // 업무 지시 — 명부의 직원(key) 또는 경로(cwd)로 폴더를 정하고 claude -p 를 그 폴더에서 띄운다
-        if (demo) return sendJson(res, 400, { error: 'demo server cannot run tasks' });
+        if (demo) return sendJson(res, 400, { error: 'demo server cannot run tasks', code: 'demo' });
         const cfg = loadConfig();
         let cwd = typeof body.cwd === 'string' ? body.cwd.trim() : '';
         const key = typeof body.key === 'string' ? body.key.trim() : '';
@@ -169,7 +169,7 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
           const rec = startTask({ who: body.who || key, cwd, task: body.task, mode: body.mode, model: body.model });
           return sendJson(res, 200, { ok: true, task: rec });
         } catch (e) {
-          return sendJson(res, 400, { error: e.message });
+          return sendJson(res, 400, { error: e.message, code: e.code || 'bad', parent: e.parent || '' });
         }
       }
       if (adminWrite && route === '/api/admin/task/stop') {

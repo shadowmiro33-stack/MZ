@@ -51,7 +51,11 @@ function save(rec) {
 
 /** 업무 시작. who = 표시용(직원 이름), cwd = 프로젝트 폴더(있어야 함) */
 export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '' }) {
-  if (!cwd || !fs.existsSync(cwd) || !fs.statSync(cwd).isDirectory()) throw new Error('폴더가 없습니다 / folder not found: ' + cwd);
+  cwd = String(cwd || '').trim().replace(/^["']+|["']+$/g, '');          // 탐색기에서 복사하면 따옴표가 붙는다
+  if (!cwd || !fs.existsSync(cwd)) { const e = new Error('폴더가 없습니다 / folder not found: ' + cwd); e.code = 'noDir'; throw e; }
+  if (!fs.statSync(cwd).isDirectory()) {                                   // 파일을 적었다 — 그 파일이 있는 폴더를 제안
+    const e = new Error('폴더가 아니라 파일입니다 / not a folder: ' + cwd); e.code = 'notDir'; e.parent = path.dirname(cwd); throw e;
+  }
   if (typeof task !== 'string' || !task.trim()) throw new Error('업무 내용이 비었습니다 / empty task');
   if (!Object.hasOwn(MODES, mode)) throw new Error('모르는 권한 모드 / unknown mode: ' + mode);
   const id = idNow();
