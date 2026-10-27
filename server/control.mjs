@@ -34,6 +34,16 @@ export function health(port, timeoutMs = 1000) {
 }
 
 /** 포트에 뭔가 듣고 있나(우리 것이든 아니든) */
+/** 포트가 비기를 기다린다(서버를 끈 직후 — 윈도우는 1~2초 뒤에 놓아준다). 돌려주는 값 = 비었는가 */
+export async function waitPortFree(port, totalMs = 5000) {
+  const until = Date.now() + totalMs;
+  while (Date.now() < until) {
+    if (!(await portBusy(port, 500))) return true;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return !(await portBusy(port, 500));
+}
+
 export function portBusy(port, timeoutMs = 800) {
   return new Promise((resolve) => {
     const req = http.get({ host: '127.0.0.1', port, path: '/', timeout: timeoutMs }, (res) => {
@@ -134,7 +144,7 @@ export async function ensureServer() {
   const h = await health(port, 400);
   if (h && !isStale(h)) return 'running';
   if (!takeStartLock()) return 'starting';
-  if (h) await stopServer();                                // 옛 폴더·옛 버전의 서버 — 끄고 이 저장소 것으로
+  if (h) { await stopServer(); await waitPortFree(port); }  // 옛 폴더·옛 버전의 서버 — 끄고 이 저장소 것으로
   startDetached();
   return 'started';
 }

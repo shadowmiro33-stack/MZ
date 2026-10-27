@@ -4,7 +4,7 @@
 // --admin 은 관리자 모드(/admin.html)를 연다(--open 과 같이 쓸 필요 없음).
 import { logFile } from '../server/paths.mjs';
 import { demoPort, resolvePort } from '../server/config.mjs';
-import { health, isStale, openBrowser, portBusy, startDetached, stopServer, urlOf, waitHealth } from '../server/control.mjs';
+import { health, isStale, openBrowser, portBusy, startDetached, stopServer, urlOf, waitHealth, waitPortFree } from '../server/control.mjs';
 import { fail, has, requireNode, say } from './common.mjs';
 
 requireNode();
@@ -18,6 +18,7 @@ let h = await health(port);
 if (h && !demo && isStale(h)) {                            // 옛 폴더·옛 버전의 서버 — 끄고 이 저장소 것으로
   say(`옛 서버(${h.repo || '버전 ' + h.version})가 떠 있어 끄고 다시 켭니다.`, `An older server (${h.repo || 'version ' + h.version}) is running; restarting it.`);
   await stopServer();
+  await waitPortFree(port);
   h = null;
 }
 if (h) {
