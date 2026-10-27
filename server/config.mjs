@@ -77,6 +77,8 @@ function normalizeStaff(raw, teams) {
     if (c) s.color = c;
     const p = text(v.path, 512);
     if (p) s.path = p;                     // 업무 지시를 보낼 프로젝트 폴더(절대 경로)
+    const role = typeof v.role === 'string' ? v.role.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').trim().slice(0, 4000) : '';
+    if (role) s.role = role;               // 직원 프로필 — 담당·규칙·말투. 업무마다 시스템 프롬프트에 붙는다
     out[key] = s;
   }
   return out;

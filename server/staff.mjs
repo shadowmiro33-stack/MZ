@@ -44,3 +44,16 @@ export function decorate(person, cfg, name, key) {
     color: s.color || teamColor || null,
   };
 }
+
+/** 직원 프로필 → Claude 시스템 프롬프트에 덧붙일 글. 명부에 없으면 '' */
+export function profilePrompt(cfg, key) {
+  const s = (cfg.staff && cfg.staff[key]) || staffFor(cfg, key, pathKey(key)) || null;
+  if (!s) return '';
+  const who = [s.name, s.title, s.team ? `${s.team} 팀` : ''].filter(Boolean).join(' · ');
+  const office = cfg.title ? ` ${cfg.title}의` : '';
+  const lines = [];
+  if (who) lines.push(`너는${office} 팀원 "${who}"이다. 이 프로젝트 폴더의 담당자로서 일한다.`);
+  if (s.role) lines.push('담당 업무와 일하는 방식:', s.role);
+  lines.push('보고는 한국어로, 결론부터 짧게. 막히는 것이 있으면 추측하지 말고 "질문:" 으로 시작하는 줄에 물어본다.');
+  return lines.join('\n');
+}
