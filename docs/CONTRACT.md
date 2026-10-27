@@ -9,11 +9,11 @@ Claude Code 세션 하나하나를 사무실 캐릭터(개구리·카피바라)�
 | 경로 | 영역 | 내용 |
 |---|---|---|
 | `hooks/office-hook.mjs` | 백엔드 | Claude Code 훅 수신기 — 세션 카드 1파일 쓰기/지우기 |
-| `server/*.mjs` | 백엔드 | 로컬 HTTP 서버, 스냅샷 조립, 대화 기록 꼬리 읽기, 생존 판정, 데모 데이터 |
+| `server/*.mjs` | 백엔드 | 로컬 HTTP 서버, 스냅샷 조립, 대화 기록 꼬리 읽기, 생존 판정, 데모 데이터, 명부 입히기(staff.mjs), 설정 읽기·쓰기(config.mjs) |
 | `scripts/*.mjs` | 백엔드 | setup(적용)·start·stop·status(doctor)·uninstall |
 | `test/*.test.mjs` | 백엔드 | `node --test` 단위 시험 |
 | `package.json` | 백엔드 | 의존성 없음. scripts: setup, start, stop, status, uninstall, demo, test |
-| `web/*` | 화면 | 정적 화면(index.html·style.css·i18n.js·office-*.js·office/*.webp) |
+| `web/*` | 화면 | 정적 화면(index.html·style.css·i18n.js·office-*.js·office/*.webp) + 관리자 모드(admin.html·admin.js·admin.css) |
 | `README*.md`, `CLAUDE.md`, `docs/*` | 문서 | 사용 설명·구조·스프라이트 교체 |
 
 
@@ -74,7 +74,12 @@ PermissionRequest 는 승인 창이 뜨는 즉시, Notification(permission_promp
 // Person — 프로젝트(폴더) 하나 = 캐릭터 하나. 같은 폴더의 세션 여러 개는 한 명으로 합친다.
 {
   "id": "/Users/me/my-app",        // 안정 키 = 프로젝트 루트(git 최상위, 없으면 cwd) 정규화 경로
-  "name": "my-app",                // 표시 이름 = 루트 폴더 이름(같은 이름이 둘이면 "my-app (parent)")
+  "name": "my-app",                // 표시 이름 = 명부(staff.name)가 있으면 그것, 없으면 루트 폴더 이름(같은 이름이 둘이면 "my-app (parent)")
+  "folder": "my-app",              // 루트 폴더 이름(명부 열쇠) — 색·종류의 기본값은 이 이름으로 정해져 표시 이름을 바꿔도 안 변한다
+  "title": "프론트엔드",            // 명부의 직책, 없으면 ""
+  "team": "개발",                  // 명부의 팀(설정 teams 에 있는 것만), 없으면 ""
+  "kind": "frog",                  // "frog" | "capy" | null(이름으로 자동)
+  "color": "#2E86DE",              // 개인 색 > 팀 색 > null(이름으로 자동). #RRGGBB
   "path": "/Users/me/my-app",
   "status": "working",             // "working" | "decision" | "rest"  (세션들 중 decision > working > rest)
   "pending": 0,                    // 승인 대기 중인 세션 수
@@ -119,15 +124,38 @@ thinking·빈 글은 건너뛴다. 대화 기록 형식은 Claude Code 내부 �
 ## 5. 설정 (`~/.claude-office/config.json`, 없어도 됨)
 
 ```json
-{ "port": 4777, "autoStart": true, "homes": { "my-main-project": "server" },
-  "hide": ["scratch"], "fallbackMinutes": 20, "staleHours": 6, "kidCommits": 50, "lang": "auto" }
+{ "port": 4777, "autoStart": true, "title": "RGA 오피스",
+  "teams": { "개발": { "color": "#2E86DE" }, "기획": { "color": "#E74C3C" } },
+  "staff": { "web-front": { "name": "개굴 대리", "title": "프론트엔드", "team": "개발", "kind": "frog" },
+             "C:/Users/me/infra": { "name": "카피 과장", "title": "인프라", "team": "개발", "kind": "capy", "home": "server", "color": "#123456" },
+             "scratch": { "hidden": true } },
+  "homes": { "my-main-project": "server" }, "hide": ["scratch"],
+  "fallbackMinutes": 20, "staleHours": 6, "kidCommits": 50, "lang": "auto" }
 ```
 
 - `port` — 서버 포트(환경변수 `CLAUDE_OFFICE_PORT` 가 우선). 서버는 **127.0.0.1 에만** 붙는다.
 - `autoStart` — SessionStart 훅이 서버가 꺼져 있으면 백그라운드로 띄운다(재부팅 뒤에도 Claude 만 켜면 화면이 산다).
-- `homes` — 프로젝트 이름(또는 경로) → "server" 면 그 캐릭터는 서버실에 서서 일한다.
-- `hide` — 사무실에 안 띄울 프로젝트 이름·경로.
+- `title` — 사무실 이름(≤40자). 있으면 위 막대 제목·탭 제목이 두 언어 모두 이것.
+- `teams` — 팀 이름(≤24자, 최대 32개) → `{ color }`(#RRGGBB, 없어도 됨). 팀 색은 그 팀 직원의 기본 색.
+- `staff` — 프로젝트 **폴더 이름 또는 경로**(윈도우는 대소문자 무시, 경로가 이름보다 우선) → 명부 항목(최대 200개).
+  `name`·`title`·`team` 각 ≤24자, `kind` `frog`|`capy`(그 밖은 자동), `home` `"server"` 만, `color` #RRGGBB, `hidden` true.
+  없는 팀을 적으면 팀 칸은 버려진다. 빈 칸은 저장할 때 뺀다.
+- `homes` — (옛 방식) 프로젝트 이름(또는 경로) → "server" 면 서버실. `staff.*.home` 과 같은 효과.
+- `hide` — (옛 방식) 사무실에 안 띄울 프로젝트 이름·경로. `staff.*.hidden` 과 같은 효과.
 - `lang` — "auto" | "ko" | "en". 화면에 그대로 전달(`GET /api/config`).
+
+`normalizeConfig`(server/config.mjs)가 읽기·쓰기 양쪽의 단일 검증 규칙이다. 모르는 키·이상한 값은 버린다.
+
+## 5-1. 관리자 모드 (`web/admin.html`)
+
+- `GET /api/config` → `{ lang, title, teams, version }` — 사무실 화면이 제목·팀 색을 받는다.
+- `GET /api/admin/config` → `{ config, seen: [{ folder, path, name }], demo, version }` — 지금 설정(정규화됨)과 지금 사무실에 있는 프로젝트.
+- `POST /api/admin/config` (본문 = 설정 JSON, ≤256KB) → `{ ok: true, config }` — 검증해 `config.json` 에 **원자적으로**(tmp→rename) 쓴다.
+  **서버의 유일한 쓰기 경로.** 받는 조건: Host 검사 통과 + 헤더 `X-Office-Admin: 1` + `Content-Type: application/json` +
+  `Origin` 이 없거나 이 서버 자신(`http://127.0.0.1:포트` 등). 하나라도 어긋나면 403, JSON 이 깨지면 400.
+  (`X-Office-Admin` 은 다른 사이트의 폼·단순 fetch 가 붙일 수 없는 사용자 정의 헤더라 CSRF 를 막고, CORS 헤더가 없어 사전 요청도 실패한다.)
+- 그 밖의 경로에 POST 는 여전히 405.
+- 데모 서버(`--demo`)도 명부를 입힌다 — 관리자 모드를 가짜 데이터로 시험해 볼 수 있다. 데모의 저장도 진짜 `config.json` 에 쓴다.
 
 ## 6. 생존 판정 (세션이 아직 켜져 있나)
 

@@ -9,6 +9,8 @@ const I18N = (() => {
   const TEXT = {
     ko: {
       title: "3D 사무실",
+      admin: "⚙ 관리자",
+      "admin.label": "관리자 모드 — 직원 명부·팀·사무실 이름 설정",
       "lang.label": "언어",
       "side.people": "사무실 사람들",
       "side.log": "활동 로그",
@@ -40,6 +42,8 @@ const I18N = (() => {
     },
     en: {
       title: "3D Office",
+      admin: "⚙ Admin",
+      "admin.label": "Admin mode — staff, teams and office name",
       "lang.label": "Language",
       "side.people": "People in the office",
       "side.log": "Activity",
@@ -156,6 +160,7 @@ const I18N = (() => {
   const cut = (text, n) => { const a = Array.from(text || ""); return a.length > n ? a.slice(0, n).join("") + "…" : a.join(""); };
   const listeners = [];
   let lang = "en", fixed = false;
+  let officeTitle = "";                          // 설정(title)의 사무실 이름 — 있으면 두 언어 모두 그것
 
   (function detect() {
     const q = norm(new URLSearchParams(location.search).get("lang"));
@@ -168,15 +173,17 @@ const I18N = (() => {
 
   // 설정 파일의 lang 은 서버에서 받아 온다(주소·저장값이 없을 때만). 서버가 없으면 브라우저 언어 그대로.
   async function init() {
-    if (!fixed) {
-      try {
-        const ctl = new AbortController();
-        const timer = setTimeout(() => ctl.abort(), 1500);
-        const res = await fetch("/api/config", { signal: ctl.signal, cache: "no-store" });
-        clearTimeout(timer);
-        if (res.ok) { const c = await res.json(); const l = norm(c && c.lang); if (l) lang = l; }
-      } catch { /* 설정을 못 읽어도 화면은 뜬다 */ }
-    }
+    try {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), 1500);
+      const res = await fetch("/api/config", { signal: ctl.signal, cache: "no-store" });
+      clearTimeout(timer);
+      if (res.ok) {
+        const c = await res.json();
+        if (!fixed) { const l = norm(c && c.lang); if (l) lang = l; }
+        officeTitle = typeof c?.title === "string" ? c.title.trim() : "";
+      }
+    } catch { /* 설정을 못 읽어도 화면은 뜬다 */ }
     document.documentElement.lang = lang;
   }
   function setLang(next) {
@@ -190,7 +197,7 @@ const I18N = (() => {
     for (const f of listeners) f(lang);
   }
 
-  const t = (key, vars) => fill(TEXT[lang][key] ?? TEXT.ko[key] ?? key, vars);
+  const t = (key, vars) => (key === "title" && officeTitle ? officeTitle : fill(TEXT[lang][key] ?? TEXT.ko[key] ?? key, vars));
   const lines = name => LINES[lang][name] || LINES.ko[name] || [""];
   function act(x) {
     if (!x) return "";

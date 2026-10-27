@@ -33,7 +33,7 @@ fs.writeFileSync(path.join(tmp, 'outside.txt'), 'outside');
 function listen(server) {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve(server.address().port)));
 }
-function req(port, rawPath, { host, method = 'GET', headers = {} } = {}) {
+function req(port, rawPath, { host, method = 'GET', headers = {}, body } = {}) {
   return new Promise((resolve, reject) => {
     const r = http.request({ host: '127.0.0.1', port, path: rawPath, method, headers: { Host: host ?? `127.0.0.1:${port}`, ...headers } }, (res) => {
       const chunks = [];
@@ -41,7 +41,7 @@ function req(port, rawPath, { host, method = 'GET', headers = {} } = {}) {
       res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body: Buffer.concat(chunks).toString('utf8') }));
     });
     r.on('error', reject);
-    r.end();
+    r.end(body);
   });
 }
 function freePort() {
@@ -118,6 +118,36 @@ test('/api/office·/api/config·/api/health 형식', async () => {
   assert.equal(h.app, 'claude-3d-frog-office');
   assert.equal(h.demo, false);
   assert.equal(h.pid, process.pid);
+});
+
+test('관리자 API: 헤더·출처·JSON 검사, 저장하면 config.json 이 바뀌고 /api/config 에 보인다', async () => {
+  const good = { 'Content-Type': 'application/json', 'X-Office-Admin': '1' };
+  const body = JSON.stringify({ title: 'RGA 오피스', teams: { 개발: { color: '#2e86de' } }, staff: { app: { name: '개굴', team: '개발' } }, port: 4777 });
+  // 읽기 — 설정 + 지금 보이는 프로젝트
+  const g = JSON.parse((await req(port, '/api/admin/config')).body);
+  assert.deepEqual(Object.keys(g).sort(), ['config', 'demo', 'seen', 'version']);
+  assert.equal(g.config.title, '');
+  // 막히는 것들: 관리자 헤더 없음, 다른 출처, JSON 아님, 깨진 JSON, 다른 경로에 POST
+  assert.equal((await req(port, '/api/admin/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body })).status, 403);
+  assert.equal((await req(port, '/api/admin/config', { method: 'POST', headers: { ...good, Origin: 'http://evil.com' }, body })).status, 403);
+  assert.equal((await req(port, '/api/admin/config', { method: 'POST', headers: { 'X-Office-Admin': '1', 'Content-Type': 'text/plain' }, body })).status, 403);
+  assert.equal((await req(port, '/api/admin/config', { method: 'POST', headers: good, body: '{bad' })).status, 400);
+  assert.equal((await req(port, '/api/config', { method: 'POST', headers: good, body })).status, 405);
+  assert.ok(!fs.existsSync(path.join(tmp, 'home', 'config.json')));
+  // 저장
+  const ok = await req(port, '/api/admin/config', { method: 'POST', headers: { ...good, Origin: `http://127.0.0.1:${port}` }, body });
+  assert.equal(ok.status, 200);
+  const saved = JSON.parse(ok.body);
+  assert.equal(saved.ok, true);
+  assert.equal(saved.config.title, 'RGA 오피스');
+  assert.deepEqual(saved.config.staff, { app: { name: '개굴', team: '개발' } });
+  const onDisk = JSON.parse(fs.readFileSync(path.join(tmp, 'home', 'config.json'), 'utf8'));
+  assert.equal(onDisk.title, 'RGA 오피스');
+  assert.equal(onDisk.port, 4777);
+  const c = JSON.parse((await req(port, '/api/config')).body);
+  assert.equal(c.title, 'RGA 오피스');
+  assert.deepEqual(c.teams, { 개발: { color: '#2E86DE' } });
+  fs.rmSync(path.join(tmp, 'home', 'config.json'), { force: true });
 });
 
 test('실제 스냅샷 경로(주입 없음)도 서버에서 돈다', async () => {

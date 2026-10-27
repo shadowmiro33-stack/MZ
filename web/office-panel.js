@@ -33,6 +33,7 @@ const OfficePanel = (() => {
       box.append(p);
     }
     const facts = [t("d.sessions", { n: d.sessions || 1 })];
+    if (d.folder && d.folder !== d.name) facts.unshift(`📁 ${d.folder}`);
     if (d.commits != null) facts.push(t("d.commits", { n: d.commits }));
     if (d.pending > 1) facts.push(t("d.pending", { n: d.pending }));
     if (d.source === "transcript") facts.push(t("d.transcript"));
@@ -59,10 +60,12 @@ const OfficePanel = (() => {
     const head = el("button", "o-head");
     head.type = "button";
     head.setAttribute("aria-expanded", open ? "true" : "false");
-    head.append(dot(OfficeLife.colorOf(d.name)), el("b", null, d.name), el("span", `o-chip ${cls}`, t("status." + mode)));
+    head.append(dot(OfficeLife.colorFor(d)), el("b", null, d.name), el("span", `o-chip ${cls}`, t("status." + mode)));
     if (d.subCount) head.append(el("span", "o-chip sub", t("chip.subs", { n: d.subCount })));
     head.onclick = () => P.pick?.(d.id);
     li.append(head);
+    const role = [d.title, d.team].filter(Boolean).join(" · ");       // 명부의 직책·팀
+    if (role) li.append(el("p", "o-role", role));
     const w = what(d, open);
     if (w) li.append(el("p", `o-doing ${cls}`, open && mode !== "rest" ? `${t("d.now")} · ${w}` : w));
     if (open) li.append(details(d));
@@ -112,7 +115,7 @@ const OfficePanel = (() => {
         const uid = uidOf(d, e);
         now.add(uid);
         if (P.seen.has(uid) || P.items.some(x => x.uid === uid) || P.queue.some(x => x.uid === uid)) continue;
-        const row = { uid, at: ms, id: d.id, name: d.name, color: OfficeLife.colorOf(d.name), act: { k: e.k, a: e.a } };
+        const row = { uid, at: ms, id: d.id, name: d.name, color: OfficeLife.colorFor(d), act: { k: e.k, a: e.a } };
         if (P.primed) P.queue.push(row); else add(row, true);
       }
     }

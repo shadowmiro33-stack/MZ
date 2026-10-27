@@ -239,10 +239,15 @@
   function nameTags(ctx) {
     const tags = [], fs = st.view.small ? 10 : 12, th = fs + 6;
     ctx.font = `600 ${fs}px ${FONT}`;
+    const sub = `500 ${fs - 1}px ${FONT}`;
     for (const p of L.people.values()) {
       if (!p.box || p.alpha < 0.3) continue;
       const [x, y] = scr(p.x, p.feet);
-      tags.push({ p, x, y: y + 3, w: ctx.measureText(p.name).width + 18, h: th });
+      ctx.font = `600 ${fs}px ${FONT}`;
+      let w = ctx.measureText(p.name).width + 18;
+      const role = p.title ? ` · ${p.title}` : "";          // 명부의 직책은 이름 옆에 조금 작게
+      if (role) { ctx.font = sub; w += ctx.measureText(role).width; }
+      tags.push({ p, x, y: y + 3, w, h: th, role });
     }
     tags.sort((a, b) => a.y - b.y);
     const placed = [];
@@ -262,6 +267,11 @@
       ctx.beginPath(); ctx.arc(lx + 8, g.y + g.h / 2 + 0.5, 3, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = on ? inkOn(g.p.color) : "#1E2622"; ctx.textBaseline = "middle"; ctx.font = `${on ? 800 : 600} ${fs}px ${FONT}`;
       ctx.fillText(g.p.name, lx + 14, g.y + g.h / 2 + 1);
+      if (g.role) {
+        const nw = ctx.measureText(g.p.name).width;
+        ctx.font = sub; ctx.fillStyle = on ? inkOn(g.p.color) : "#56615B";
+        ctx.fillText(g.role, lx + 14 + nw, g.y + g.h / 2 + 1);
+      }
     }
   }
   function bubbles(ctx) {
@@ -424,7 +434,8 @@
   const norm = d => ({ ...d, id: String(d.id ?? d.path ?? d.name), name: String(d.name ?? d.id ?? "?"),
                        subs: Array.isArray(d.subs) ? d.subs : [], log: Array.isArray(d.log) ? d.log : [] });
   const toLife = d => ({
-    id: d.id, name: d.name, status: d.status, ask: d.ask, kid: d.kid, home: d.home, commits: d.commits, path: d.path,
+    id: d.id, name: d.name, folder: d.folder, title: d.title, team: d.team, kind: d.kind, color: d.color,
+    status: d.status, ask: d.ask, kid: d.kid, home: d.home, commits: d.commits, path: d.path,
     doing: I18N.act(d.doing), subCount: d.subCount || 0,
     subs: d.subs.map(s => ({ id: String(s.id), type: s.type || "", desc: s.desc || "", doing: I18N.act(s.doing) })),
   });

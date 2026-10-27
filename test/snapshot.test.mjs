@@ -65,9 +65,14 @@ test('형식: 최상위·Person 필드 전부', async () => {
   assert.ok(!Number.isNaN(Date.parse(s.now)));
   assert.equal(s.people.length, 1);
   const p = s.people[0];
-  assert.deepEqual(Object.keys(p).sort(), ['ask', 'commits', 'doing', 'home', 'id', 'kid', 'log', 'name', 'path', 'pending', 'sessions', 'source', 'status', 'subCount', 'subs'].sort());
+  assert.deepEqual(Object.keys(p).sort(), ['ask', 'color', 'commits', 'doing', 'folder', 'home', 'id', 'kid', 'kind', 'log', 'name', 'path', 'pending', 'sessions', 'source', 'status', 'subCount', 'subs', 'team', 'title'].sort());
   assert.equal(p.id, path.resolve(cwd));
   assert.equal(p.name, 'my-app');
+  assert.equal(p.folder, 'my-app');
+  assert.equal(p.title, '');
+  assert.equal(p.team, '');
+  assert.equal(p.kind, null);
+  assert.equal(p.color, null);
   assert.equal(p.status, 'working');
   assert.equal(p.source, 'hook');
   assert.equal(p.commits, null);
@@ -157,6 +162,49 @@ test('숨김·homes·이름 겹침', async () => {
   forgetSnap();
   const s2 = await snap({ hide: [b] });
   assert.equal(s2.people.filter((p) => p.name === 'app').length, 1); // 겹침이 풀리면 이름도 원래대로
+});
+
+test('직원 명부(staff·teams): 표시 이름·직책·팀·종류·색·자리·숨김', async () => {
+  const base = fresh();
+  const fe = folder(base, 'web-front');
+  const infra = folder(base, 'infra');
+  const hid = folder(base, 'scratch');
+  for (const [cwd, s] of [[fe, 'fe'], [infra, 'in'], [hid, 'hid']]) {
+    transcript(cwd, s, [asst(iso(1000), [read('/x/y')], 'tool_use')]);
+    putCard(s, { kind: 'working', cwd, updatedAt: iso(2000), ...live });
+  }
+  const s = await snap({
+    teams: { 개발: { color: '#2e86de' }, 기획: {} },
+    staff: {
+      'web-front': { name: '개굴 대리', title: '프론트엔드', team: '개발', kind: 'frog' },
+      [infra]: { name: '카피 과장', title: '인프라', team: '없는팀', kind: 'capy', home: 'server', color: '#123456' },
+      scratch: { hidden: true },
+    },
+  });
+  const by = Object.fromEntries(s.people.map((p) => [p.folder, p]));
+  assert.deepEqual(Object.keys(by).sort(), ['infra', 'web-front']); // hidden 은 안 나온다
+  assert.equal(by['web-front'].name, '개굴 대리');
+  assert.equal(by['web-front'].title, '프론트엔드');
+  assert.equal(by['web-front'].team, '개발');
+  assert.equal(by['web-front'].kind, 'frog');
+  assert.equal(by['web-front'].color, '#2E86DE'); // 팀 색
+  assert.equal(by.infra.name, '카피 과장');
+  assert.equal(by.infra.team, ''); // 없는 팀은 버린다
+  assert.equal(by.infra.kind, 'capy');
+  assert.equal(by.infra.home, 'server'); // 명부의 home 도 homes 와 같게 먹힌다
+  assert.equal(by.infra.color, '#123456'); // 개인 색이 팀 색보다 우선
+});
+
+test('normalizeConfig: 명부의 이상한 값은 닫는다', () => {
+  const c = normalizeConfig({
+    title: '  RGA 오피스\u0000 ', teams: { 개발: '#abcdef', bad: { color: 'red' }, '': {} },
+    staff: { a: { name: 'x'.repeat(40), kind: 'dragon', home: 'kitchen', hidden: 'yes', team: 'bad' }, b: 'nope', '': { name: 'z' } },
+  });
+  assert.equal(c.title, 'RGA 오피스');
+  assert.deepEqual(c.teams, { 개발: { color: '#ABCDEF' }, bad: {} });
+  assert.deepEqual(c.staff, { a: { name: 'x'.repeat(24), team: 'bad' } });
+  assert.equal(normalizeConfig({}).title, '');
+  assert.deepEqual(normalizeConfig({}).staff, {});
 });
 
 test('대체 모드: 카드 없는 최근 대화도 보이고, ended 카드는 숨기고 대체 모드도 막는다', async () => {

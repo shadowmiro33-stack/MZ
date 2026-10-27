@@ -139,6 +139,16 @@ You haven't given it any work. Give Claude a task and it goes straight back to i
 **Do I have to restart the server after a reboot?**
 No. If the server isn't running when a Claude session starts, the hook starts it in the background (`autoStart`). Just open your bookmark.
 
+## Admin mode — make it your company's office
+
+Click **⚙ Admin** at the top right of the office (or open `http://127.0.0.1:4777/admin.html`). No terminal needed: edit in the browser, press **Save**, and the office picks it up within 3 seconds.
+
+- **Office name** — the title in the top bar.
+- **Teams** — name and color; a team's color becomes its members' hat and cardigan color.
+- **Staff** — per project folder: display name (name tag), title (shown small next to the name), team, character (frog/capybara), seat (desk/server room), color, hide. Click a chip under "In the office right now" to add that project.
+
+You can also tell Claude `open admin mode`, or run `npm run admin`. Admin mode edits the config file below, so hand-editing works too.
+
 ## Configuration
 
 `~/.claude-office/config.json` (optional):
@@ -147,8 +157,15 @@ No. If the server isn't running when a Claude session starts, the hook starts it
 {
   "port": 4777,
   "autoStart": true,
-  "homes": { "my-main-project": "server" },
-  "hide": ["scratch"],
+  "title": "RGA Office",
+  "teams": { "Dev": { "color": "#2E86DE" }, "Planning": { "color": "#E74C3C" } },
+  "staff": {
+    "web-front": { "name": "Ribbit Lee", "title": "Frontend", "team": "Dev", "kind": "frog" },
+    "infra": { "name": "Capy Kim", "title": "Infra", "team": "Dev", "kind": "capy", "home": "server" },
+    "scratch": { "hidden": true }
+  },
+  "homes": {},
+  "hide": [],
   "fallbackMinutes": 20,
   "staleHours": 6,
   "kidCommits": 50,
@@ -160,8 +177,11 @@ No. If the server isn't running when a Claude session starts, the hook starts it
 |---|---|
 | `port` | Server port. The `CLAUDE_OFFICE_PORT` environment variable wins |
 | `autoStart` | If the server is not running when a Claude session starts, start it in the background |
-| `homes` | These projects work standing in front of the server rack |
-| `hide` | Projects (folder name or path) to keep out of the office |
+| `title` | Office name shown in the top bar. Empty means "3D Office" |
+| `teams` | Team name → color (`#RRGGBB`), the default color for its members |
+| `staff` | Project folder name (or path) → `name`, `title`, `team`, `kind` (`frog`/`capy`), `home` (`server`), `color`, `hidden` |
+| `homes` | (legacy) These projects work standing in front of the server rack — same as `staff.*.home` |
+| `hide` | (legacy) Projects to keep out of the office — same as `staff.*.hidden` |
 | `fallbackMinutes` | For sessions without hooks: how recent a transcript must be to show up |
 | `staleHours` | Sessions whose process can't be checked leave after this many quiet hours |
 | `kidCommits` | Fewer commits than this means a smaller character |
@@ -173,6 +193,7 @@ No. If the server isn't running when a Claude session starts, the hook starts it
 |---|---|
 | `node scripts/setup.mjs` | install hooks, start the server, open the browser |
 | `node scripts/start.mjs --open` | start the server and open the browser |
+| `npm run admin` | open admin mode (staff, teams, office name) |
 | `node scripts/stop.mjs` | stop the server |
 | `node scripts/status.mjs` | check hooks, server and detected sessions |
 | `node scripts/uninstall.mjs` | remove only this repo's hooks and stop the server (`--purge` also deletes `~/.claude-office`) |

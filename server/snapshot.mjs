@@ -8,6 +8,7 @@ import { cardAlive, processStarts } from './liveness.mjs';
 import { cleanupCards, mtimeOf, readCards, recentTranscripts, transcriptFor } from './sessions.mjs';
 import { LOG_N, MAX_SUBS, oneLine, readTranscript, runningSubagents } from './activity.mjs';
 import { installedEvents } from './hooks-config.mjs';
+import { decorate, homeOf, isHidden } from './staff.mjs';
 
 export const API_VERSION = 1;
 const GIT_TTL_MS = 10 * 60 * 1000; // 루트·커밋 수는 10분 캐시 — git 을 3초마다 두드리지 않게
@@ -96,17 +97,6 @@ export function transcriptStatus(last, mtimeMs, now = Date.now()) {
 
 const nameKey = (s) => (IS_WIN ? String(s).toLowerCase() : String(s));
 
-function matches(list, name, key) {
-  return list.some((x) => nameKey(x) === nameKey(name) || pathKey(x) === key);
-}
-
-function homeOf(homes, name, key) {
-  for (const [k, v] of Object.entries(homes)) {
-    if (v === 'server' && (nameKey(k) === nameKey(name) || pathKey(k) === key)) return 'server';
-  }
-  return null;
-}
-
 /** 살아 있는 세션들 — 훅 카드 먼저, 카드 없는 최근 대화는 대체 모드로 */
 function collectSessions(cfg, now, starts) {
   const cards = readCards();
@@ -166,7 +156,7 @@ export async function buildSnapshot(opts = {}) {
   const people = [];
   for (const [key, { root, items }] of groups) {
     const base = path.basename(root) || root;
-    if (matches(cfg.hide, base, key)) continue;
+    if (isHidden(cfg, base, key)) continue;
     const status = items.map((s) => s.status).sort((a, b) => PRIORITY[a] - PRIORITY[b])[0];
     const asks = items.filter((s) => s.status === 'decision').sort((a, b) => b.at - a.at);
     const commits = await commitCount(root, now);
@@ -175,7 +165,7 @@ export async function buildSnapshot(opts = {}) {
     const lastAt = (s) => (s.info.log.length ? s.info.log[s.info.log.length - 1].at : '');
     const latest = items.reduce((a, b) => (lastAt(b) > lastAt(a) ? b : a));
     const log = items.flatMap((s) => s.info.log).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0)).slice(-LOG_N);
-    people.push({
+    people.push(decorate({
       id: root,
       name: base,
       path: root,
@@ -186,15 +176,15 @@ export async function buildSnapshot(opts = {}) {
       source: items.some((s) => s.source === 'hook') ? 'hook' : 'transcript',
       commits,
       kid: commits !== null && commits < cfg.kidCommits,
-      home: homeOf(cfg.homes, base, key),
+      home: homeOf(cfg, base, key),
       subs: subs.slice(0, MAX_SUBS),
       subCount: subs.length,
       doing: latest.info.doing,
       log,
-    });
+    }, cfg, base, key));
   }
 
-  // 같은 폴더 이름이 둘이면 "이름 (부모)" 로 가른다
+  // 같은 표시 이름이 둘이면 "이름 (부모)" 로 가른다
   const count = new Map();
   for (const p of people) count.set(nameKey(p.name), (count.get(nameKey(p.name)) || 0) + 1);
   for (const p of people) {

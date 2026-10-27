@@ -5,9 +5,11 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WEB_DIR, officeHome, pidFile, startingLock } from './paths.mjs';
-import { VERSION, demoPort, loadConfig, resolvePort } from './config.mjs';
+import { VERSION, demoPort, loadConfig, resolvePort, saveConfig } from './config.mjs';
 import { buildSnapshot } from './snapshot.mjs';
 import { createDemo } from './demo.mjs';
+import { decorate, homeOf, isHidden } from './staff.mjs';
+import { pathKey } from './paths.mjs';
 import { APP, health, openBrowser, removePidFile, urlOf } from './control.mjs';
 
 const TYPES = {
@@ -21,6 +23,38 @@ const TYPES = {
 };
 const SNAPSHOT_MEMO_MS = 1000; // 탭 여러 개가 동시에 물어도 1초에 한 번만 조립
 const MAX_STATIC = 5000;
+const MAX_BODY = 256 * 1024; // 관리자 저장 본문 상한
+const ADMIN_HEADER = 'x-office-admin'; // 관리자 쓰기는 이 헤더가 있어야 한다 — 다른 사이트의 폼·fetch 는 못 붙인다(CSRF 방어)
+
+/** 데모 사람들에게도 명부를 입힌다 — 관리자 화면을 데모로 시험해 볼 수 있게 */
+function decorateDemo(snap) {
+  const cfg = loadConfig();
+  const people = [];
+  for (const p of snap.people) {
+    const name = p.name, key = pathKey(p.path);
+    if (isHidden(cfg, name, key)) continue;
+    people.push(decorate({ ...p, home: homeOf(cfg, name, key) || p.home || null }, cfg, name, key));
+  }
+  return { ...snap, people };
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on('data', (c) => {
+      size += c.length;
+      if (size > MAX_BODY) {
+        reject(new Error('too large'));
+        req.destroy();
+        return;
+      }
+      chunks.push(c);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    req.on('error', reject);
+  });
+}
 
 /** 시작 때 web/ 를 훑어 내줄 파일 목록을 만든다. '_'·'.' 로 시작하는 이름과 링크는 뺀다 */
 export function scanWeb(webDir = WEB_DIR) {
@@ -80,7 +114,7 @@ function sendFile(req, res, abs) {
 export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } = {}) {
   const files = scanWeb(webDir);
   const demoSnap = demo ? createDemo() : null;
-  const make = snapshot || (demo ? async () => demoSnap(Date.now()) : () => buildSnapshot());
+  const make = snapshot || (demo ? async () => decorateDemo(demoSnap(Date.now())) : () => buildSnapshot());
   let memo = { at: 0, promise: null };
   const getSnapshot = () => {
     const now = Date.now();
@@ -94,7 +128,6 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
       const port = server.address() && server.address().port;
       const host = String(req.headers.host || '').toLowerCase();
       if (![`127.0.0.1:${port}`, `localhost:${port}`, `[::1]:${port}`].includes(host)) return send(res, 403, 'forbidden');
-      if (req.method !== 'GET') return send(res, 405, 'method not allowed', undefined, { Allow: 'GET' });
       const raw = String(req.url || '/');
       const q = raw.indexOf('?');
       const p = q >= 0 ? raw.slice(0, q) : raw;
@@ -105,6 +138,40 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
       } catch {
         return send(res, 404, 'not found');
       }
+      // 관리자 저장 — 유일한 쓰기 경로. 같은 출처(브라우저 주소가 이 서버)에서 관리자 헤더를 붙인 JSON 만 받는다.
+      if (route === '/api/admin/config' && req.method === 'POST') {
+        const origin = String(req.headers.origin || '').toLowerCase();
+        const okOrigin = !origin || [`http://127.0.0.1:${port}`, `http://localhost:${port}`, `http://[::1]:${port}`].includes(origin);
+        if (!okOrigin || req.headers[ADMIN_HEADER] !== '1' || !/^application\/json/i.test(String(req.headers['content-type'] || ''))) {
+          return send(res, 403, 'forbidden');
+        }
+        let body;
+        try {
+          body = JSON.parse(await readBody(req));
+        } catch {
+          return sendJson(res, 400, { error: 'bad json' });
+        }
+        try {
+          const cfg = saveConfig(body);
+          memo = { at: 0, promise: null }; // 다음 폴링이 새 설정으로 조립하게
+          return sendJson(res, 200, { ok: true, config: cfg });
+        } catch (e) {
+          console.error(new Date().toISOString(), 'config save failed:', e && e.message ? e.message : e);
+          return sendJson(res, 500, { error: 'save failed' });
+        }
+      }
+      if (req.method !== 'GET') return send(res, 405, 'method not allowed', undefined, { Allow: 'GET' });
+      if (route === '/api/admin/config') {
+        // 관리자 화면이 읽는다: 지금 설정 + 지금 사무실에 있는 프로젝트(명부에 넣기 쉽게)
+        let seen = [];
+        try {
+          const snap = await getSnapshot();
+          seen = (snap.people || []).map((x) => ({ folder: x.folder || x.name, path: x.path, name: x.name }));
+        } catch {
+          /* 스냅샷이 없어도 설정은 보여 준다 */
+        }
+        return sendJson(res, 200, { config: loadConfig(), seen, demo, version: VERSION });
+      }
       if (route === '/api/office') {
         try {
           return sendJson(res, 200, await getSnapshot());
@@ -113,7 +180,10 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
           return sendJson(res, 500, { error: 'snapshot failed' });
         }
       }
-      if (route === '/api/config') return sendJson(res, 200, { lang: loadConfig().lang, version: VERSION });
+      if (route === '/api/config') {
+        const c = loadConfig();
+        return sendJson(res, 200, { lang: c.lang, title: c.title, teams: c.teams, version: VERSION });
+      }
       if (route === '/api/health') return sendJson(res, 200, { ok: true, app: APP, version: VERSION, demo, pid: process.pid });
       const abs = files.get(route === '/' ? '/index.html' : route);
       if (!abs) return send(res, 404, 'not found');

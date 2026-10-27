@@ -25,6 +25,9 @@ const OfficeLife = (() => {
   }
   const colorOf = name => OFFICE_COLORS[hash(name) % OFFICE_COLORS.length];
   const speciesOf = name => (hash("종:" + name) % 2 ? "capy" : "frog");
+  // 명부(설정 staff·teams)가 정한 색·종류가 있으면 그것, 없으면 이름으로 — 색·종은 폴더 이름 기준이라 표시 이름을 바꿔도 안 변한다
+  const colorFor = d => (d.color || colorOf(d.folder || d.name));
+  const speciesFor = d => (d.kind === "frog" || d.kind === "capy" ? d.kind : speciesOf(d.folder || d.name));
   const cut = (text, n) => { const a = Array.from(text || ""); return a.length > n ? a.slice(0, n).join("") + "…" : a.join(""); };
   const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(v => v[1]);
   // 사건 — 글은 화면이 언어에 맞게 만든다(key = i18n 의 ev.* , arg = 끼워 넣을 말)
@@ -416,14 +419,15 @@ const OfficeLife = (() => {
       let p = L.people.get(d.id);
       const fresh = !p;
       if (fresh) {
-        p = { id: d.id, name: d.name, species: speciesOf(d.name), color: colorOf(d.name), x: 0, y: 0, path: [], steps: null,
+        p = { id: d.id, name: d.name, species: speciesFor(d), color: colorFor(d), x: 0, y: 0, path: [], steps: null,
               act: null, face: pick([1, -1]), phase: rnd(0, 6.28), alpha: 1, over: null, bubble: null,
               nextSay: L.t + rnd(3, 8), nextPart: 0 };
         L.people.set(d.id, p);
       }
       const was = p.status, wasDoing = p.doing, back = p.leaving, wasMode = fresh ? null : modeOf(p);
       const wasDesk = L.desks.get(p.id);
-      Object.assign(p, { name: d.name, status: d.status, ask: d.ask || "", kid: !!d.kid, home: d.home || null,
+      Object.assign(p, { name: d.name, title: d.title || "", team: d.team || "", species: speciesFor(d), color: colorFor(d),
+                         status: d.status, ask: d.ask || "", kid: !!d.kid, home: d.home || null,
                          doing: d.doing || "", subCount: d.subCount || 0, subs: d.subs || [], commits: d.commits,
                          path0: d.path });
       if (fresh) {
@@ -587,6 +591,6 @@ const OfficeLife = (() => {
     }
   }
 
-  return { L, SIT_DESK, sync, update, cut, nearest, route, colorOf, speciesOf, modeOf, blocked, onFloor,
+  return { L, SIT_DESK, sync, update, cut, nearest, route, colorOf, speciesOf, colorFor, speciesFor, modeOf, blocked, onFloor,
            drainEvents: () => L.events.splice(0, L.events.length) };
 })();

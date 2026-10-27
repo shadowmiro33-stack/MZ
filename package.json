@@ -1,12 +1,12 @@
 {
   "name": "claude-3d-frog-office",
-  "version": "0.1.0",
-  "description": "A view-only 3D office that shows each Claude Code session as a frog or capybara character. Local only, zero dependencies, macOS and Windows.",
+  "version": "0.2.0",
+  "description": "A view-only 3D office that shows each Claude Code session as a frog or capybara character, with a browser admin mode for staff names, titles and teams. Local only, zero dependencies, macOS and Windows.",
   "type": "module",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/d-onworks/claude-3d-frog-office.git"
+    "url": "https://github.com/shadowmiro33-stack/MZ.git"
   },
   "keywords": [
     "claude-code",
@@ -25,6 +25,7 @@
     "stop": "node scripts/stop.mjs",
     "status": "node scripts/status.mjs",
     "uninstall": "node scripts/uninstall.mjs",
+    "admin": "node scripts/start.mjs --admin",
     "demo": "node scripts/start.mjs --demo --open",
     "test": "node --test"
   }

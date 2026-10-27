@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// 서버를 백그라운드로 켠다. 사용법: node scripts/start.mjs [--open] [--demo]
+// 서버를 백그라운드로 켠다. 사용법: node scripts/start.mjs [--open] [--admin] [--demo]
 // --demo 는 가짜 사람들로 도는 데모 서버 — 실제 서버와 헷갈리지 않게 포트 한 칸 옆(기본 4778)에 뜬다.
+// --admin 은 관리자 모드(/admin.html)를 연다(--open 과 같이 쓸 필요 없음).
 import { logFile } from '../server/paths.mjs';
 import { demoPort, resolvePort } from '../server/config.mjs';
 import { health, openBrowser, portBusy, startDetached, urlOf, waitHealth } from '../server/control.mjs';
@@ -31,4 +32,5 @@ if (h) {
   say(`${label}를 켰습니다: ${url}${demo ? ' (끄기: npm run stop -- --demo)' : ''}`,
     `${labelEn} started: ${url}${demo ? ' (stop: npm run stop -- --demo)' : ''}`);
 }
-if (has('--open')) openBrowser(url);
+if (has('--admin')) openBrowser(`${url}admin.html`);
+else if (has('--open')) openBrowser(url);

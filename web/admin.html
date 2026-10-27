@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>관리자 모드 — 3D 사무실</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='3' width='14' height='11' rx='2' fill='%232C3E50'/%3E%3Crect x='4' y='6' width='3' height='3' fill='%23fff'/%3E%3Crect x='9' y='6' width='3' height='3' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin">
+<!-- 관리자 모드 — ~/.claude-office/config.json 을 브라우저에서 고친다. 저장은 POST /api/admin/config (admin.js) -->
+<header id="top">
+  <a class="a-back" href="./" data-t="back">← 사무실</a>
+  <h1 data-t="title">관리자 모드</h1>
+  <span id="a-demo" class="a-demo" data-t="demo" hidden>데모 서버</span>
+  <span id="a-status" class="a-status" role="status" aria-live="polite"></span>
+  <button type="button" id="a-reset" class="a-btn" data-t="reset">되돌리기</button>
+  <button type="button" id="a-save" class="a-btn primary" data-t="save">저장</button>
+</header>
+
+<main id="a-main">
+  <p class="a-lead" data-t="lead">여기서 고친 내용은 설정 파일(<code>~/.claude-office/config.json</code>)에 저장되고, 사무실 화면에 3초 안에 반영됩니다. 터미널은 필요 없습니다.</p>
+
+  <!-- 1. 사무실 -->
+  <section class="a-card">
+    <h2 data-t="office">사무실</h2>
+    <div class="a-grid">
+      <label><span data-t="office.title">사무실 이름</span><input id="f-title" type="text" maxlength="40" placeholder="예: RGA 오피스"></label>
+      <label><span data-t="office.lang">언어</span>
+        <select id="f-lang"><option value="auto" data-t="lang.auto">자동</option><option value="ko">한국어</option><option value="en">English</option></select>
+      </label>
+      <label><span data-t="office.kid">꼬마 기준 커밋 수</span><input id="f-kid" type="number" min="0" step="1"><small data-t="office.kid.hint">이보다 커밋이 적은 저장소는 꼬마 직원</small></label>
+      <label><span data-t="office.port">포트</span><input id="f-port" type="number" min="1" max="65535" step="1"><small data-t="office.port.hint">바꾸면 서버를 다시 켜야 합니다</small></label>
+      <label class="a-check"><input id="f-auto" type="checkbox"><span data-t="office.auto">Claude 세션이 시작될 때 서버가 꺼져 있으면 자동으로 켜기</span></label>
+      <details class="a-adv">
+        <summary data-t="office.adv">고급</summary>
+        <div class="a-grid">
+          <label><span data-t="office.fallback">훅 없는 세션 찾기(분)</span><input id="f-fallback" type="number" min="0" max="1440" step="1"></label>
+          <label><span data-t="office.stale">조용하면 퇴근(시간)</span><input id="f-stale" type="number" min="0.05" max="720" step="0.5"></label>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- 2. 팀 -->
+  <section class="a-card">
+    <h2><span data-t="teams">팀</span> <small data-t="teams.hint">팀 색은 그 팀 직원의 모자·가디건 색이 됩니다</small></h2>
+    <div id="teams" class="a-rows"></div>
+    <button type="button" id="team-add" class="a-btn small" data-t="teams.add">+ 팀 추가</button>
+  </section>
+
+  <!-- 3. 직원 명부 -->
+  <section class="a-card">
+    <h2><span data-t="staff">직원 명부</span> <small data-t="staff.hint">프로젝트 폴더 하나 = 직원 한 명. 폴더 이름(또는 전체 경로)으로 찾습니다</small></h2>
+    <div id="seen-box" class="a-seen" hidden>
+      <span data-t="staff.seen">지금 사무실에 있는 프로젝트:</span>
+      <span id="seen"></span>
+    </div>
+    <div class="a-table-wrap">
+      <table id="staff" class="a-table">
+        <thead><tr>
+          <th data-t="col.key">폴더 / 경로</th><th data-t="col.name">표시 이름</th><th data-t="col.title">직책</th><th data-t="col.team">팀</th>
+          <th data-t="col.kind">캐릭터</th><th data-t="col.home">자리</th><th data-t="col.color">색</th><th data-t="col.hidden">숨김</th><th></th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <button type="button" id="staff-add" class="a-btn small" data-t="staff.add">+ 직원 추가</button>
+  </section>
+
+  <section class="a-card a-json">
+    <details>
+      <summary data-t="json">저장될 설정(JSON) 미리보기</summary>
+      <pre id="preview"></pre>
+    </details>
+  </section>
+</main>
+
+<script src="i18n.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

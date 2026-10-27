@@ -139,6 +139,17 @@ Claude Code ──훅──▶ hooks/office-hook.mjs ──▶ ~/.claude-office/
 **컴퓨터를 다시 켜면 서버도 다시 켜야 하나요?**
 아닙니다. Claude 세션이 시작될 때 서버가 꺼져 있으면 훅이 알아서 띄웁니다(`autoStart`). 북마크만 열면 됩니다.
 
+## 관리자 모드 — 우리 회사 사무실로 꾸미기
+
+사무실 화면 오른쪽 위 **⚙ 관리자** 버튼을 누르면(주소는 `http://127.0.0.1:4777/admin.html`) 터미널 없이 브라우저에서 사무실을 꾸밀 수 있습니다. **저장**을 누르면 바로 설정 파일에 쓰이고, 사무실 화면에 3초 안에 반영됩니다.
+
+- **사무실 이름** — 위 막대의 제목. "3D 사무실" 대신 "RGA 오피스" 같은 우리 이름으로.
+- **팀** — 팀 이름과 색. 팀 색이 그 팀 직원의 모자·가디건 색이 됩니다.
+- **직원 명부** — 프로젝트 폴더마다 표시 이름(명찰), 직책(명찰 옆에 작게), 팀, 캐릭터(개구리/카피바라), 자리(책상/서버실), 색, 숨김.
+  "지금 사무실에 있는 프로젝트" 칩을 누르면 바로 명부에 들어갑니다.
+
+Claude 에게 `관리자 모드 열어줘` 라고 해도 되고, `npm run admin` 으로도 열립니다. 관리자 모드가 쓰는 것은 아래 설정 파일 그대로라, 손으로 고쳐도 됩니다.
+
 ## 설정
 
 `~/.claude-office/config.json` (없으면 기본값):
@@ -147,8 +158,15 @@ Claude Code ──훅──▶ hooks/office-hook.mjs ──▶ ~/.claude-office/
 {
   "port": 4777,
   "autoStart": true,
-  "homes": { "my-main-project": "server" },
-  "hide": ["scratch"],
+  "title": "RGA 오피스",
+  "teams": { "개발": { "color": "#2E86DE" }, "기획": { "color": "#E74C3C" } },
+  "staff": {
+    "web-front": { "name": "개굴 대리", "title": "프론트엔드", "team": "개발", "kind": "frog" },
+    "infra": { "name": "카피 과장", "title": "인프라", "team": "개발", "kind": "capy", "home": "server" },
+    "scratch": { "hidden": true }
+  },
+  "homes": {},
+  "hide": [],
   "fallbackMinutes": 20,
   "staleHours": 6,
   "kidCommits": 50,
@@ -160,8 +178,11 @@ Claude Code ──훅──▶ hooks/office-hook.mjs ──▶ ~/.claude-office/
 |---|---|
 | `port` | 서버 포트. 환경변수 `CLAUDE_OFFICE_PORT` 가 우선합니다 |
 | `autoStart` | Claude 세션이 시작될 때 서버가 꺼져 있으면 자동으로 띄웁니다 |
-| `homes` | 지정한 프로젝트는 서버실 랙 앞에 서서 일합니다 |
-| `hide` | 사무실에 띄우지 않을 프로젝트(폴더 이름 또는 경로) |
+| `title` | 사무실 이름(위 막대 제목). 비우면 "3D 사무실" |
+| `teams` | 팀 이름 → 색(`#RRGGBB`). 팀 직원의 기본 색 |
+| `staff` | 프로젝트 폴더 이름(또는 경로) → 표시 이름 `name`, 직책 `title`, 팀 `team`, 캐릭터 `kind`(`frog`/`capy`), 자리 `home`(`server`), 개인 색 `color`, 숨김 `hidden` |
+| `homes` | (옛 방식) 지정한 프로젝트는 서버실 랙 앞에 서서 일합니다 — `staff` 의 `home` 과 같음 |
+| `hide` | (옛 방식) 사무실에 띄우지 않을 프로젝트 — `staff` 의 `hidden` 과 같음 |
 | `fallbackMinutes` | 훅이 없는 세션을 대화 기록으로 찾을 때, 최근 몇 분 안에 바뀐 기록까지 볼지 |
 | `staleHours` | 프로세스를 확인할 수 없는 세션을 몇 시간 조용하면 퇴근시킬지 |
 | `kidCommits` | 이보다 커밋이 적으면 꼬마 직원 |
@@ -173,6 +194,7 @@ Claude Code ──훅──▶ hooks/office-hook.mjs ──▶ ~/.claude-office/
 |---|---|
 | `node scripts/setup.mjs` | 훅 설치 + 서버 실행 + 브라우저 열기 |
 | `node scripts/start.mjs --open` | 서버 실행 후 브라우저 열기 |
+| `npm run admin` | 관리자 모드 열기(직원 명부·팀·사무실 이름) |
 | `node scripts/stop.mjs` | 서버 끄기 |
 | `node scripts/status.mjs` | 훅 설치 여부, 서버 상태, 잡힌 세션 수 확인 |
 | `node scripts/uninstall.mjs` | 이 저장소가 넣은 훅만 지우고 서버 끄기 (`--purge` 면 `~/.claude-office` 도 삭제) |

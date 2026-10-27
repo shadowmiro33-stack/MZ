@@ -1,19 +1,30 @@
-// 설정(config.json) 읽기 — 없거나 깨져도 기본값으로 선다. 손으로 고친 이상한 값은 기본값으로 닫는다.
+// 설정(config.json) 읽기·쓰기 — 없거나 깨져도 기본값으로 선다. 손으로 고친 이상한 값은 기본값으로 닫는다.
+// 관리자 화면(/admin.html)이 같은 규칙(normalizeConfig)으로 검증해 saveConfig 로 저장한다.
 import fs from 'node:fs';
 import path from 'node:path';
-import { REPO_DIR, configFile } from './paths.mjs';
+import { REPO_DIR, configFile, officeHome } from './paths.mjs';
 
 export const DEFAULT_PORT = 4777;
 export const DEFAULTS = Object.freeze({
   port: DEFAULT_PORT,
   autoStart: true,
+  title: '',
   homes: {},
   hide: [],
+  teams: {},
+  staff: {},
   fallbackMinutes: 20,
   staleHours: 6,
   kidCommits: 50,
   lang: 'auto',
 });
+
+export const KINDS = Object.freeze(['auto', 'frog', 'capy']);
+export const HOMES = Object.freeze(['server']);
+export const MAX_TITLE = 40;
+export const MAX_NAME = 24;
+export const MAX_TEAMS = 32;
+export const MAX_STAFF = 200;
 
 export const VERSION = (() => {
   try {
@@ -25,6 +36,46 @@ export const VERSION = (() => {
 
 const num = (v, lo, hi, def) => (Number.isFinite(v) && v >= lo && v <= hi ? v : def);
 const plainObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+/** 한 줄 문자열 — 제어문자 제거, 길이 제한. 비면 '' */
+const text = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, max) : '');
+const color = (v) => (typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v.trim()) ? v.trim().toUpperCase() : '');
+
+/** 팀 목록 { 이름: { color } } — 이름은 24자, 색은 #RRGGBB 만 */
+function normalizeTeams(raw) {
+  const out = {};
+  if (!plainObj(raw)) return out;
+  for (const [k, v] of Object.entries(raw)) {
+    const name = text(k, MAX_NAME);
+    if (!name || Object.keys(out).length >= MAX_TEAMS) continue;
+    const c = plainObj(v) ? color(v.color) : color(v);
+    out[name] = c ? { color: c } : {};
+  }
+  return out;
+}
+
+/** 직원 명부 { 폴더이름|경로: { name, title, team, kind, home, hidden } } — 빈 칸은 뺀다 */
+function normalizeStaff(raw, teams) {
+  const out = {};
+  if (!plainObj(raw)) return out;
+  for (const [k, v] of Object.entries(raw)) {
+    const key = text(k, 512);
+    if (!key || !plainObj(v) || Object.keys(out).length >= MAX_STAFF) continue;
+    const s = {};
+    const name = text(v.name, MAX_NAME);
+    const title = text(v.title, MAX_NAME);
+    const team = text(v.team, MAX_NAME);
+    if (name) s.name = name;
+    if (title) s.title = title;
+    if (team && Object.hasOwn(teams, team)) s.team = team;
+    if (KINDS.includes(v.kind) && v.kind !== 'auto') s.kind = v.kind;
+    if (HOMES.includes(v.home)) s.home = v.home;
+    if (v.hidden === true) s.hidden = true;
+    const c = color(v.color);
+    if (c) s.color = c;
+    out[key] = s;
+  }
+  return out;
+}
 
 /** 읽은 값 → 검증된 설정. 모르는 키는 버린다. */
 export function normalizeConfig(raw) {
@@ -33,11 +84,15 @@ export function normalizeConfig(raw) {
   if (plainObj(c.homes)) {
     for (const [k, v] of Object.entries(c.homes)) if (typeof v === 'string') homes[k] = v;
   }
+  const teams = normalizeTeams(c.teams);
   return {
     port: Number.isInteger(c.port) ? num(c.port, 1, 65535, DEFAULT_PORT) : DEFAULT_PORT,
     autoStart: c.autoStart !== false,
+    title: text(c.title, MAX_TITLE),
     homes,
     hide: Array.isArray(c.hide) ? c.hide.filter((x) => typeof x === 'string' && x) : [],
+    teams,
+    staff: normalizeStaff(c.staff, teams),
     fallbackMinutes: num(c.fallbackMinutes, 0, 24 * 60, DEFAULTS.fallbackMinutes),
     staleHours: num(c.staleHours, 0.05, 24 * 30, DEFAULTS.staleHours),
     kidCommits: num(c.kidCommits, 0, 1e9, DEFAULTS.kidCommits),
@@ -69,6 +124,18 @@ export function loadConfig() {
   return cfg;
 }
 
+/** 관리자 화면이 보낸 설정을 검증해 config.json 에 저장(원자적 쓰기). 돌려주는 값 = 저장된(정규화된) 설정 */
+export function saveConfig(raw) {
+  const cfg = normalizeConfig(raw);
+  const file = configFile();
+  fs.mkdirSync(officeHome(), { recursive: true });
+  const tmp = `${file}.tmp-${process.pid}-${Date.now()}`;
+  fs.writeFileSync(tmp, JSON.stringify(cfg, null, 2) + '\n');
+  fs.renameSync(tmp, file);
+  cache = null; // 다음 loadConfig 가 새 파일을 읽는다
+  return cfg;
+}
+
 /** 포트 — 환경변수 CLAUDE_OFFICE_PORT 가 설정보다 우선 */
 export function resolvePort(cfg = loadConfig()) {
   const env = Number(process.env.CLAUDE_OFFICE_PORT);
@@ -84,6 +151,5 @@ export function demoPort(cfg = loadConfig()) {
 
 /** setup 이 처음 만들어 두는 config.json 내용 */
 export function defaultConfigText() {
-  const { port, autoStart, homes, hide, fallbackMinutes, staleHours, kidCommits, lang } = DEFAULTS;
-  return JSON.stringify({ port, autoStart, homes, hide, fallbackMinutes, staleHours, kidCommits, lang }, null, 2) + '\n';
+  return JSON.stringify({ ...DEFAULTS }, null, 2) + '\n';
 }
