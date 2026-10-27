@@ -165,7 +165,13 @@ thinking·빈 글은 건너뛴다. 대화 기록 형식은 Claude Code 내부 �
   `POST /api/admin/procedure/delete` `{ cwd, slug }`. 업무에 `procedure: slug` 를 붙이면 업무 글 앞에 "절차서를 읽고 그대로" 머리말이 붙는다.
 - 반복 업무(server/schedules.mjs, `~/.claude-office/schedules.json`): `GET /api/admin/schedules`, `POST /api/admin/schedule`(만들기·고치기, `{ id?, cwd, who, task, procedure, mode, every: daily|hourly|minutes|once, time, minutes, at, continueSession, enabled }`),
   `POST /api/admin/schedule/delete`, `POST /api/admin/schedule/run`(지금 실행). 실제 서버가 30초마다 `tick()` 으로 때가 된 것을 startTask 한다. 데모 서버는 안 돈다.
-- `continueSession` 이면 `claude --continue -p …` — 같은 폴더의 지난 대화에 이어서.
+- `continueSession` 이면 `claude --continue -p …` — 같은 폴더의 지난 대화에 이어서. `replyTo: <업무 id>` 면 그 업무의 질문에 답한 것(원 업무 `answeredBy`, 일지의 question 완료).
+- 업무 프롬프트는 "## 보고 / ## 질문" 형식을 요구한다. `listTasks` 가 출력 꼬리에서 `report`·`question` 을 뽑는다(server/tasks.mjs parseReport).
+- 직원 프로필·일지(server/staff.mjs `staffContext`): `--append-system-prompt` 에 "너는 <이름 · 직책 · 팀> + role + 최근 일지(toContext)" 가 붙는다.
+- 업무 일지(server/journal.mjs, `<cwd>/.claude/journal/YYYY-MM-DD.json`): kind activity|question|todo|note|briefing, 300자 요약, 비밀값 마스킹.
+  업무가 끝나면 activity(+question) 자동 기록. `GET /api/admin/journal?cwd=&date=`, `POST /api/admin/journal` `{ cwd, kind, text }` 또는 `{ cwd, id, done }`.
+- 브리핑(server/briefer.mjs): 경로 있는 직원마다 하루 한 번 아침(09:00)·퇴근 전(17:30) 규칙 기반 브리핑을 일지에 적고 알림 큐에 넣는다. `GET /api/admin/notices`(가져가면 비움), `POST /api/admin/briefing` `{ cwd, type, who }` 즉시.
+- 스냅샷: 답 안 한 질문이 있는 폴더는 세션이 없어도 Person 으로 나오고 status=decision, `askTask`=업무 id, ask="질문: …".
 - 그 밖의 경로에 POST 는 여전히 405.
 - 데모 서버(`--demo`)도 명부를 입힌다 — 관리자 모드를 가짜 데이터로 시험해 볼 수 있다. 데모의 저장도 진짜 `config.json` 에 쓴다.
 

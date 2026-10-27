@@ -39,6 +39,8 @@
       "tab.work": "업무", "tab.proc": "업무 절차", "tab.people": "직원·팀", "tab.office": "사무실 설정", "col.more": "더",
       "work.proc": "절차서", "work.proc.none": "(없음 — 아래 글만)", "work.proc.hint": "업무 절차 탭에서 만든 절차를 고르면 \"그 절차대로\"가 자동으로 붙습니다",
       "work.when": "언제", "when.now": "지금 한 번", "when.daily": "매일 정해진 시각", "when.hourly": "매시간", "when.minutes": "N분마다", "work.cont": "지난 대화에 이어서",
+      today: "오늘", "today.pending": "밀린 것", "j.todo": "할 일", "j.note": "메모", "j.ph": "할 일·메모 입력 후 Enter", "j.morning": "☀️ 아침 브리핑", "j.wrapup": "🌙 퇴근 전 정리",
+      "j.empty": "오늘 기록이 없습니다 — 업무가 끝나면 자동으로 적힙니다", "j.kind.activity": "한 일", "j.kind.question": "질문", "j.kind.todo": "할 일", "j.kind.note": "메모", "j.kind.briefing": "브리핑",
       "work.needAny": "절차를 고르거나 업무 내용을 적으세요", "chat.people": "직원", "chat.ph": "업무를 적어 보내세요 — Ctrl+Enter. 질문에 답할 때도 여기에",
       "chat.empty": "아직 대화가 없습니다. 아래에 첫 업무를 적어 보세요.", "chat.pick": "왼쪽에서 직원을 고르세요", "chat.running": "일하는 중…", "chat.answered": "답함", "chat.reply": "답하기", "chat.noReport": "(보고 없음 — 출력 보기)", "work.scheduled": "반복 업무로 등록했습니다 — 아래 '반복 업무'에서 확인",
       sched: "반복 업무", "sched.hint": "서버가 켜져 있는 동안 때가 되면 자동으로 보냅니다(Claude 세션이 시작될 때 서버도 켜집니다)",
@@ -94,6 +96,8 @@
       "tab.work": "Work", "tab.proc": "Procedures", "tab.people": "People & teams", "tab.office": "Office settings", "col.more": "More",
       "work.proc": "Procedure", "work.proc.none": "(none — text below only)", "work.proc.hint": "Pick a procedure from the Procedures tab and \"follow it\" is added automatically",
       "work.when": "When", "when.now": "Now, once", "when.daily": "Daily at a time", "when.hourly": "Every hour", "when.minutes": "Every N minutes", "work.cont": "Continue last conversation",
+      today: "Today", "today.pending": "Carried over", "j.todo": "To-do", "j.note": "Note", "j.ph": "Add a to-do or note, Enter", "j.morning": "☀️ Morning brief", "j.wrapup": "🌙 Wrap-up",
+      "j.empty": "Nothing today yet — finished tasks are logged automatically", "j.kind.activity": "done", "j.kind.question": "question", "j.kind.todo": "to-do", "j.kind.note": "note", "j.kind.briefing": "brief",
       "work.needAny": "Pick a procedure or write a task", "chat.people": "People", "chat.ph": "Write a task — Ctrl+Enter. Answer questions here too",
       "chat.empty": "No conversation yet. Write the first task below.", "chat.pick": "Pick an employee on the left", "chat.running": "working…", "chat.answered": "answered", "chat.reply": "Reply", "chat.noReport": "(no report — show output)", "work.scheduled": "Added as a recurring task — see 'Recurring' below",
       sched: "Recurring", "sched.hint": "Runs automatically while the server is up (the server starts whenever a Claude session starts)",
@@ -332,7 +336,7 @@
       fromConfig(body.config);
       S.dirty = false;
       renderTeams(); renderStaff(); preview();
-      renderPeople(); loadProcList(); loadTasks(); loadScheds();
+      renderPeople(); loadProcList(); loadTasks(); loadScheds(); loadJournal();
       status("");
     } catch {
       status(t("loadFail"), "err");
@@ -399,7 +403,7 @@
       else if (run) b.append(el("span", "badge run", t("chat.running")));
       b.append(pth);
       b.title = c.path;
-      b.onclick = () => { W.pick = c.id; $("w-cwd").value = ""; W.replyTo = ""; renderPeople(); loadProcList(); renderTasks(); };
+      b.onclick = () => { W.pick = c.id; $("w-cwd").value = ""; W.replyTo = ""; renderPeople(); loadProcList(); renderTasks(); loadJournal(); };
       box.append(b);
     }
   }
@@ -501,8 +505,10 @@
     try {
       const res = await fetch("/api/admin/tasks", { cache: "no-store" });
       if (!res.ok) return;
+      const before = W.tasks.filter(x => x.status === "running").length;
       W.tasks = (await res.json()).tasks || [];
       renderTasks();
+      if (W.tasks.filter(x => x.status === "running").length < before) loadJournal();
     } catch { /* 다음 번에 */ }
     clearTimeout(W.timer);
     if (W.tasks.some(x => x.status === "running")) W.timer = setTimeout(loadTasks, 3000);
@@ -667,13 +673,67 @@
     P.slug = ""; $("p-editor").hidden = true; await loadProcs(); loadProcList();
   };
 
+  // ---------- 오늘 패널(업무 일지) ----------
+  const J = { cwd: "" };
+  const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify(body) });
+  async function loadJournal() {
+    const who = picked();
+    J.cwd = who ? who.cwd : "";
+    const list = $("j-list"), pend = $("j-pending");
+    list.replaceChildren(); pend.replaceChildren(); $("j-pending-wrap").hidden = true;
+    $("j-date").textContent = new Date().toLocaleDateString("sv");
+    if (!J.cwd) { list.append(el("li", "a-empty", t("chat.pick"))); return; }
+    try {
+      const r = await fetch("/api/admin/journal?cwd=" + encodeURIComponent(J.cwd), { cache: "no-store" });
+      if (!r.ok) return;
+      const b = await r.json();
+      const row = (e, withDate) => {
+        const li = el("li", (e.done ? "done " : "") + (e.kind === "todo" || e.kind === "question" ? "clickable" : ""));
+        li.append(el("time", null, withDate ? e.date.slice(5) : new Date(e.at).toLocaleTimeString("sv").slice(0, 5)), el("span", "k " + e.kind, t("j.kind." + e.kind)), el("span", null, e.text));
+        if (li.classList.contains("clickable")) { li.title = "✓"; li.onclick = async () => { await post("/api/admin/journal", { cwd: J.cwd, id: e.id, done: !e.done }); loadJournal(); }; }
+        return li;
+      };
+      const evs = (b.events || []).filter(e => e.kind !== "briefing");
+      if (!evs.length) list.append(el("li", "a-empty", t("j.empty")));
+      for (const e of evs) list.append(row(e, false));
+      const carry = (b.pending || []).filter(p => p.date !== new Date().toLocaleDateString("sv"));
+      if (carry.length) { $("j-pending-wrap").hidden = false; for (const p of carry) pend.append(row(p, true)); }
+    } catch { /* 다음에 */ }
+  }
+  $("j-form").onsubmit = async e => {
+    e.preventDefault();
+    const text = $("j-text").value.trim();
+    if (!text || !J.cwd) return;
+    await post("/api/admin/journal", { cwd: J.cwd, kind: $("j-kind").value, text });
+    $("j-text").value = ""; loadJournal();
+  };
+  for (const [id, type] of [["j-morning", "morning"], ["j-wrapup", "wrapup"]]) {
+    $(id).onclick = async () => {
+      if (!J.cwd) return;
+      const r = await post("/api/admin/briefing", { cwd: J.cwd, type, who: picked()?.who || "" });
+      const b = await r.json().catch(() => ({}));
+      const box = $("j-brief"); box.textContent = b.text || b.error || ""; box.hidden = !box.textContent;
+    };
+  }
+  // 알림(아침·퇴근 브리핑) — 1분마다 가져와 토스트로
+  async function pollNotices() {
+    try {
+      const r = await fetch("/api/admin/notices", { cache: "no-store" });
+      for (const n of ((await r.json()).notices || [])) {
+        const d = el("div", "a-notice"); d.append(el("b", null, n.title), document.createTextNode(n.body));
+        d.onclick = () => d.remove(); document.body.append(d); setTimeout(() => d.remove(), 20000);
+      }
+    } catch { /* 다음에 */ }
+  }
+  setInterval(pollNotices, 60000);
+
   // ---------- 탭 ----------
   function showTab(name) {
     for (const b of document.querySelectorAll("#tabs button")) b.classList.toggle("on", b.dataset.tab === name);
     for (const sec of document.querySelectorAll(".a-tab")) sec.hidden = sec.dataset.tab !== name;
     $("a-save-box").hidden = name === "work" || name === "proc";
     try { localStorage.setItem("office.admin.tab", name); } catch { /* 무시 */ }
-    if (name === "work") { renderPeople(); loadProcList(); loadTasks(); loadScheds(); }
+    if (name === "work") { renderPeople(); loadProcList(); loadTasks(); loadScheds(); loadJournal(); pollNotices(); }
     if (name === "proc") { renderProcFolders(); }
   }
   for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => showTab(b.dataset.tab);

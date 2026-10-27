@@ -1,6 +1,7 @@
 // 직원 명부(설정 staff·teams·homes·hide)를 Person 에 입힌다 — 표시 이름·직책·팀·캐릭터 종류·색·자리·숨김.
 // 열쇠는 프로젝트 폴더 이름 또는 경로(윈도우는 대소문자 무시). 실제 스냅샷과 데모가 같은 함수를 쓴다.
 import { IS_WIN, pathKey } from './paths.mjs';
+import { toContext } from './journal.mjs';
 
 const nameKey = (s) => (IS_WIN ? String(s).toLowerCase() : String(s));
 const sameKey = (k, name, key) => nameKey(k) === nameKey(name) || pathKey(k) === key;
@@ -56,4 +57,13 @@ export function profilePrompt(cfg, key) {
   if (s.role) lines.push('담당 업무와 일하는 방식:', s.role);
   lines.push('보고는 한국어로, 결론부터 짧게. 막히는 것이 있으면 추측하지 말고 "질문:" 으로 시작하는 줄에 물어본다.');
   return lines.join('\n');
+}
+
+/** 프로필 + 그 폴더의 업무 일지(최근) — 업무마다 시스템 프롬프트에 붙는다 */
+export function staffContext(cfg, key, cwd) {
+  const parts = [profilePrompt(cfg, key)];
+  let j = '';
+  try { j = cwd ? toContext(cwd) : ''; } catch { j = ''; }
+  if (j) parts.push('아래는 네 최근 업무 일지다. 이미 한 일은 되풀이하지 말고 이어서 한다.', j);
+  return parts.filter(Boolean).join('\n\n');
 }

@@ -76,6 +76,21 @@
           <span id="w-status" class="a-status"></span>
         </footer>
       </section>
+      <!-- 오른쪽: 오늘(업무 일지) -->
+      <aside class="a-today">
+        <h2><span data-t="today">오늘</span> <small id="j-date"></small></h2>
+        <ul id="j-list" class="a-jlist"></ul>
+        <div id="j-pending-wrap" hidden><h3 data-t="today.pending">밀린 것</h3><ul id="j-pending" class="a-jlist"></ul></div>
+        <form id="j-form" class="a-jform">
+          <select id="j-kind"><option value="todo" data-t="j.todo">할 일</option><option value="note" data-t="j.note">메모</option></select>
+          <input id="j-text" type="text" maxlength="300" data-t-ph="j.ph" placeholder="내용 입력 후 Enter" autocomplete="off">
+        </form>
+        <div class="a-jbtns">
+          <button type="button" id="j-morning" class="a-btn" data-t="j.morning">☀️ 아침 브리핑</button>
+          <button type="button" id="j-wrapup" class="a-btn" data-t="j.wrapup">🌙 퇴근 전 정리</button>
+        </div>
+        <pre id="j-brief" class="a-brief" hidden></pre>
+      </aside>
     </div>
   </section>
 

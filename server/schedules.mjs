@@ -6,7 +6,7 @@ import { officeHome } from './paths.mjs';
 import { MODES, startTask } from './tasks.mjs';
 import { procedurePrompt } from './procedures.mjs';
 import { loadConfig } from './config.mjs';
-import { profilePrompt } from './staff.mjs';
+import { staffContext } from './staff.mjs';
 
 export const TICK_MS = 30 * 1000;
 const MAX = 50;
@@ -96,7 +96,7 @@ export function runSchedule(id) {
   if (s.procedure) parts.push(procedurePrompt(s.procedure));
   if (s.task) parts.push(s.task);
   const rec = startTask({ who: s.who || path.basename(s.cwd), cwd: s.cwd, task: parts.join('\n\n'), mode: s.mode, continueSession: s.continueSession, schedule: s.id,
-    systemPrompt: profilePrompt(loadConfig(), s.key || path.basename(s.cwd)) });
+    systemPrompt: staffContext(loadConfig(), s.key || path.basename(s.cwd), s.cwd) });
   s.lastRun = new Date().toISOString(); s.lastTaskId = rec.id; s.runs = (s.runs || 0) + 1;
   s.nextRun = nextRunOf(s, Date.now());
   if (s.every === 'once') s.enabled = false;

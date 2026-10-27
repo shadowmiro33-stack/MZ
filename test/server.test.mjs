@@ -408,3 +408,51 @@ test('보고·질문 파싱과 답장 연결', async () => {
     delete process.env.CLAUDE_BIN;
   }
 });
+
+test('업무 일지: 업무가 끝나면 activity·question 이 적히고, 답하면 질문이 완료되며, 다음 업무 프롬프트에 일지가 붙는다', async () => {
+  const J = await import('../server/journal.mjs');
+  const proj = path.join(tmp, 'projj'); fs.mkdirSync(proj, { recursive: true });
+  // 기본 동작
+  const ev = J.record(proj, { kind: 'todo', text: '  배포  전  점검 token=abc123secret  ' });
+  assert.equal(ev.text, '배포 전 점검 [비밀값 가림]');
+  assert.equal(J.getDay(proj).length, 1);
+  assert.equal(J.pending(proj).length, 1);
+  J.setDone(proj, ev.id, true);
+  assert.equal(J.pending(proj).length, 0);
+  assert.throws(() => J.getDay(proj, '../x'), /YYYY-MM-DD/);
+  assert.match(J.toContext(proj), /업무 일지 \d{4}-\d{2}-\d{2}/);
+  assert.match(J.briefing(proj, 'wrapup', '개굴'), /개굴 퇴근 전 정리/);
+  if (fs.existsSync(path.join(tmp, 'fake-claude.mjs'))) {
+    process.env.CLAUDE_BIN = path.join(tmp, process.platform === 'win32' ? 'claude.cmd' : 'claude');
+    const good = { 'Content-Type': 'application/json', 'X-Office-Admin': '1' };
+    const a = JSON.parse((await req(port, '/api/admin/task', { method: 'POST', headers: good, body: JSON.stringify({ cwd: proj, task: '구조 정리' }) })).body).task;
+    let list = [];
+    for (let i = 0; i < 40; i++) { await new Promise((r) => setTimeout(r, 100)); list = JSON.parse((await req(port, '/api/admin/tasks')).body).tasks; if (list.find((x) => x.id === a.id)?.status !== 'running') break; }
+    await new Promise((r) => setTimeout(r, 200));
+    const day = J.getDay(proj);
+    assert.ok(day.some((e) => e.kind === 'activity' && e.meta.task === a.id), JSON.stringify(day));
+    // 가짜 claude 는 "## 보고" 를 안 찍으면 activity 만 — 질문은 여기선 없을 수 있다
+    const b = JSON.parse((await req(port, '/api/admin/task', { method: 'POST', headers: good, body: JSON.stringify({ cwd: proj, task: '이어서', replyTo: a.id, continueSession: true }) })).body).task;
+    let log = '';
+    for (let i = 0; i < 40 && !/ARGS/.test(log); i++) { await new Promise((r) => setTimeout(r, 100)); try { log = fs.readFileSync(path.join(tmp, 'home', 'tasks', `${b.id}.log`), 'utf8'); } catch { /* 아직 */ } }
+    assert.match(log, /최근 업무 일지/);                                     // 두 번째 업무의 시스템 프롬프트에 일지가 붙었다
+    assert.equal(JSON.parse((await req(port, `/api/admin/journal?cwd=${encodeURIComponent(proj)}`)).body).events.length >= 2, true);
+    delete process.env.CLAUDE_BIN;
+  }
+  // 브리핑 데몬
+  const B = await import('../server/briefer.mjs');
+  const { normalizeConfig } = await import('../server/config.mjs');
+  B._resetForTest();
+  const cfg = normalizeConfig({ staff: { projj: { name: '개굴', path: proj } } });
+  const at = new Date(); at.setHours(9, 30, 0, 0);
+  assert.equal(B.tick(at, cfg).length, 1);
+  assert.equal(B.tick(at, cfg).length, 0);                                   // 같은 날 두 번 안 함
+  const n = B.drainNotices();
+  assert.equal(n.length, 1); assert.match(n[0].title, /개굴 아침 브리핑/);
+  assert.ok(J.getDay(proj).some((e) => e.kind === 'briefing' && e.meta.type === 'morning'));
+  B._resetForTest();
+  assert.equal(B.tick(at, cfg).length, 0);                                   // 재시작해도 일지에 있으면 중복 안 함
+  const good2 = { 'Content-Type': 'application/json', 'X-Office-Admin': '1' };
+  const br = JSON.parse((await req(port, '/api/admin/briefing', { method: 'POST', headers: good2, body: JSON.stringify({ cwd: proj, type: 'wrapup', who: '개굴' }) })).body);
+  assert.match(br.text, /퇴근 전 정리/);
+});

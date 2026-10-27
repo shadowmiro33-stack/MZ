@@ -7,6 +7,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { IS_WIN, officeHome } from './paths.mjs';
 import { pidAlive } from './liveness.mjs';
+import { record as journalRecord, resolveQuestion } from './journal.mjs';
 
 export const MODES = Object.freeze({
   acceptEdits: ['--permission-mode', 'acceptEdits', '--permission-prompts', 'none'],   // 파일 수정은 자동, 그 밖은 거절
@@ -35,6 +36,17 @@ export function claudeBin() {
 const PROMPT = '표준 입력(stdin)으로 받은 업무 지시를 이 폴더에서 수행하세요. 답의 마지막은 반드시 이 형식으로: '
   + '"## 보고" 제목 아래 무엇을 했고 결과가 어디 있는지 한국어로 3~6줄. 사람이 정해 줘야 진행할 수 있는 것이 있으면 "## 질문" 제목 아래 번호를 붙여 적고 거기서 멈추세요. '
   + 'Carry out the task given on stdin in this directory. End with "## 보고" (3-6 lines in Korean: what you did, where the result is) and, only if you need a human decision, "## 질문" with numbered questions.';
+
+/** 끝난 업무를 직원 일지에 적는다 — 보고 첫 줄(activity), 질문이 있으면 question. 원문 대신 요약만 */
+function journalize(rec) {
+  try {
+    const { report, question } = parseReport(tail(rec.id));
+    const head = (s) => String(s || '').split('\n').map((x) => x.trim()).filter(Boolean)[0] || '';
+    const what = head(report) || (rec.exitCode === 0 ? '업무 완료' : '업무 실패');
+    journalRecord(rec.cwd, { kind: 'activity', text: `${head(rec.task).slice(0, 60)} → ${what}`, meta: { task: rec.id, ok: rec.exitCode === 0 } });
+    if (question) journalRecord(rec.cwd, { kind: 'question', text: head(question), meta: { task: rec.id } });
+  } catch { /* 일지는 보조 — 실패해도 업무는 끝났다 */ }
+}
 
 /** 출력 꼬리에서 보고·질문을 뽑는다 — 화면이 대화창에 말풍선으로 보여 준다 */
 export function parseReport(log) {
@@ -83,13 +95,17 @@ export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '', co
   const rec = { id, who: String(who || path.basename(cwd)), cwd, task: task.slice(0, MAX_TASK), mode, model: model || '', continueSession: !!continueSession, schedule: schedule || '', profile: !!systemPrompt, replyTo: replyTo || '',
     pid: child.pid, startedAt: new Date().toISOString(), endedAt: null, exitCode: null, error: null, bin };
   save(rec);
-  if (replyTo && /^[\w-]+$/.test(replyTo)) {                                             // 질문에 답했다 — 원 업무에 표시
+  if (replyTo && /^[\w-]+$/.test(replyTo)) {                                             // 질문에 답했다 — 원 업무에 표시 + 일지의 질문도 답함
     const orig = readRec(replyTo);
-    if (orig) { orig.answeredBy = id; save(orig); }
+    if (orig) { orig.answeredBy = id; save(orig); try { resolveQuestion(orig.cwd, orig.id); } catch { /* 일지는 보조 */ } }
   }
   live.set(id, child);
   child.on('error', (e) => { rec.error = e.message; rec.endedAt = new Date().toISOString(); rec.exitCode = -1; save(rec); live.delete(id); try { fs.closeSync(out); } catch { /* 이미 닫힘 */ } });
-  child.on('exit', (code, sig) => { rec.endedAt = new Date().toISOString(); rec.exitCode = code ?? (sig ? -2 : -1); save(rec); live.delete(id); try { fs.closeSync(out); } catch { /* 이미 닫힘 */ } });
+  child.on('exit', (code, sig) => {
+    rec.endedAt = new Date().toISOString(); rec.exitCode = code ?? (sig ? -2 : -1); save(rec); live.delete(id);
+    try { fs.closeSync(out); } catch { /* 이미 닫힘 */ }
+    journalize(rec);
+  });
   child.stdin.on('error', () => { /* 아이가 먼저 죽었다 */ });
   child.stdin.end(task.slice(0, MAX_TASK) + '\n');
   prune();
