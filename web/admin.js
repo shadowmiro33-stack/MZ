@@ -33,13 +33,22 @@
       "team.none": "(없음)", "color.team": "팀 색", "color.own": "직접", json: "저장될 설정(JSON) 미리보기",
       "ph.key": "폴더 이름 또는 C:\\경로", "ph.name": "폴더 이름 그대로", "ph.title": "예: 프론트엔드",
       dup: "같은 폴더가 두 번 있습니다", confirmLeave: "저장하지 않은 변경이 있습니다. 나갈까요?",
-      "ph.path": "C:\\work\\프로젝트 (업무 지시용, 비워도 됨)",
-      work: "업무 지시", "work.hint": "직원의 프로젝트 폴더에서 Claude Code 가 실제로 일합니다. 사무실에서 그 캐릭터가 일하는 게 보입니다",
-      "work.who": "직원", "work.mode": "권한", "work.task": "업무 내용", "work.send": "업무 보내기", "work.list": "업무 목록",
-      "work.none": "경로가 있는 직원이 없습니다 — 명부에서 경로를 적고 저장하세요", "work.sent": "보냈습니다 — 사무실에서 확인하세요",
-      "work.fail": "보내지 못했습니다", "work.empty": "아직 보낸 업무가 없습니다", "work.stop": "중지", "work.log": "출력 보기",
-      "work.demo": "데모 서버에서는 업무를 보낼 수 없습니다 — 실제 서버(4777)에서 하세요",
-      "mode.acceptEdits": "파일 수정 자동 승인 (명령 실행은 거절)", "mode.auto": "자동 모드 (안전한 명령은 알아서)", "mode.plan": "계획만 (파일 안 건드림)", "mode.bypass": "전부 자동 승인 (위험)",
+      "ph.path": "C:\\work\\프로젝트",
+      "tab.work": "업무", "tab.people": "직원·팀", "tab.office": "사무실 설정", "col.more": "더",
+      "work.step1": "1. 누구에게?", "work.step1.hint": "사무실에 켜져 있는 프로젝트는 바로 고를 수 있습니다. 다른 폴더는 아래에 경로를 적으세요.",
+      "work.step2": "2. 무슨 일을?", "work.other": "다른 폴더", "work.task.ph": "예: README 를 읽고 프로젝트 구조를 docs/STRUCTURE.md 에 정리해줘",
+      "work.send": "업무 보내기", "work.list": "업무 목록", "work.live": "켜져 있음", "work.listed": "명부",
+      "work.none": "사무실에 켜진 프로젝트가 없습니다 — 아래에 폴더 경로를 적거나, 직원·팀 탭에서 직원에게 경로를 적어 두세요",
+      "work.sent": "보냈습니다 — 사무실 탭에서 캐릭터가 일하는 걸 보세요",
+      "work.needWho": "먼저 직원을 고르거나 폴더 경로를 적으세요", "work.needTask": "업무 내용을 적으세요",
+      "work.fail": "보내지 못했습니다", "work.empty": "아직 보낸 업무가 없습니다", "work.stop": "중지", "work.log": "출력 보기", "work.hide": "출력 닫기",
+      "work.demo": "데모 서버에서는 업무를 보낼 수 없습니다 — 실제 서버(127.0.0.1:4777)에서 하세요",
+      "work.noBin": "claude 실행 파일을 찾지 못했습니다 — Claude Code 가 설치돼 있고 PATH 에 있는지 확인하세요",
+      "work.noDir": "그 폴더가 없습니다",
+      "mode.acceptEdits": "파일만 고치기", "mode.acceptEdits.d": "코드를 읽고 고칩니다. 명령 실행(빌드·테스트·git)은 하지 않습니다 — 가장 안전",
+      "mode.auto": "명령도 실행", "mode.auto.d": "빌드·테스트처럼 안전한 명령은 알아서 실행합니다(자동 모드)",
+      "mode.plan": "계획만", "mode.plan.d": "파일을 건드리지 않고 무엇을 할지만 정리합니다",
+      "mode.bypass": "전부 자동 승인", "mode.bypass.d": "모든 명령을 묻지 않고 실행 — 믿을 수 있는 폴더에서만",
       "st.running": "일하는 중", "st.done": "완료", "st.failed": "실패", "st.error": "오류",
     },
     en: {
@@ -63,13 +72,22 @@
       "team.none": "(none)", "color.team": "Team", "color.own": "Custom", json: "Preview of the config that will be saved (JSON)",
       "ph.key": "folder name or full path", "ph.name": "same as folder", "ph.title": "e.g. Frontend",
       dup: "This folder appears twice", confirmLeave: "You have unsaved changes. Leave anyway?",
-      "ph.path": "/abs/path/to/project (for tasks, optional)",
-      work: "Assign work", "work.hint": "Claude Code really works in the employee's project folder; you'll see the character working in the office",
-      "work.who": "Employee", "work.mode": "Permissions", "work.task": "Task", "work.send": "Send task", "work.list": "Tasks",
-      "work.none": "No employee has a path — add paths in the staff list and save", "work.sent": "Sent — watch the office",
-      "work.fail": "Could not send", "work.empty": "No tasks yet", "work.stop": "Stop", "work.log": "Show output",
-      "work.demo": "The demo server cannot run tasks — use the real server (4777)",
-      "mode.acceptEdits": "Auto-approve file edits (commands denied)", "mode.auto": "Auto mode (safe commands allowed)", "mode.plan": "Plan only (no file changes)", "mode.bypass": "Approve everything (dangerous)",
+      "ph.path": "/abs/path/to/project",
+      "tab.work": "Work", "tab.people": "People & teams", "tab.office": "Office settings", "col.more": "More",
+      "work.step1": "1. Who?", "work.step1.hint": "Projects currently open in the office can be picked directly. For another folder, type its path below.",
+      "work.step2": "2. What?", "work.other": "Other folder", "work.task.ph": "e.g. Read README and write the project structure to docs/STRUCTURE.md",
+      "work.send": "Send task", "work.list": "Tasks", "work.live": "online", "work.listed": "listed",
+      "work.none": "No project is open in the office — type a folder path below, or give an employee a path in People & teams",
+      "work.sent": "Sent — watch the character work in the office tab",
+      "work.needWho": "Pick an employee or type a folder path first", "work.needTask": "Write the task",
+      "work.fail": "Could not send", "work.empty": "No tasks yet", "work.stop": "Stop", "work.log": "Show output", "work.hide": "Hide output",
+      "work.demo": "The demo server cannot run tasks — use the real server (127.0.0.1:4777)",
+      "work.noBin": "Could not find the claude executable — check that Claude Code is installed and on PATH",
+      "work.noDir": "That folder does not exist",
+      "mode.acceptEdits": "Edit files only", "mode.acceptEdits.d": "Reads and edits code. No commands (build, test, git) — safest",
+      "mode.auto": "Also run commands", "mode.auto.d": "Runs safe commands like builds and tests on its own (auto mode)",
+      "mode.plan": "Plan only", "mode.plan.d": "Touches nothing; writes up what it would do",
+      "mode.bypass": "Approve everything", "mode.bypass.d": "Runs every command without asking — only in folders you trust",
       "st.running": "Working", "st.done": "Done", "st.failed": "Failed", "st.error": "Error",
     },
   };
@@ -212,7 +230,7 @@
     const counts = new Map();
     for (const r of S.staff) if (r.key.trim()) counts.set(keyOf(r.key), (counts.get(keyOf(r.key)) || 0) + 1);
     if (!S.staff.length) {
-      const tr = el("tr"); const td = el("td", "a-empty", t("staff.empty")); td.colSpan = 10; tr.append(td); body.append(tr);
+      const tr = el("tr"); const td = el("td", "a-empty", t("staff.empty")); td.colSpan = 8; tr.append(td); body.append(tr);
     }
     for (const r of S.staff) {
       const tr = el("tr", (r.hidden ? "hidden-row" : "") + (counts.get(keyOf(r.key)) > 1 ? " dup" : ""));
@@ -223,28 +241,27 @@
         i.onblur = () => { if (cls === "key") renderStaff(); };
         td.append(i); return td;
       };
-      tr.append(text("key", "key", t("ph.key"), 512), text("path", "path", t("ph.path"), 512), text("name", "name", t("ph.name")), text("title", "title", t("ph.title")));
+      tr.append(text("key", "key", t("ph.key"), 512), text("name", "name", t("ph.name")), text("title", "title", t("ph.title")));
       const teamTd = el("td");
       teamTd.append(select([["", t("team.none")], ...S.teams.filter(x => x.name.trim()).map(x => [x.name, x.name])], r.team, v => { r.team = v; markDirty(); renderTeams(); renderStaff(); }));
       tr.append(teamTd);
       const kindTd = el("td");
       kindTd.append(select(KINDS.map(k => [k, t("kind." + k)]), r.kind, v => { r.kind = v; markDirty(); }));
       tr.append(kindTd);
-      const homeTd = el("td");
-      homeTd.append(select([["desk", t("home.desk")], ["server", t("home.server")]], r.home, v => { r.home = v; markDirty(); }));
-      tr.append(homeTd);
-      // 색 — 기본은 팀 색(또는 자동), 직접 고르면 개인 색
-      const colorTd = el("td", "c");
+      tr.append(text("path", "path", t("ph.path"), 512));
+      // 더: 자리·색·숨김 — 한 칸에 작게
+      const moreTd = el("td", "more");
+      moreTd.append(select([["desk", t("home.desk")], ["server", t("home.server")]], r.home, v => { r.home = v; markDirty(); }));
       const teamColor = S.teams.find(x => x.name === r.team)?.color || "";
       const cSel = select([["", teamColor ? t("color.team") : t("kind.auto")], ["own", t("color.own")]], r.color ? "own" : "", v => {
         r.color = v === "own" ? (teamColor || DEFAULT_COLOR) : ""; markDirty(); renderStaff();
       });
-      colorTd.append(cSel);
-      if (r.color) { const c = el("input"); c.type = "color"; c.value = r.color; c.oninput = () => { r.color = c.value.toUpperCase(); markDirty(); }; colorTd.append(" ", c); }
-      tr.append(colorTd);
-      const hidTd = el("td", "c"); const h = el("input"); h.type = "checkbox"; h.checked = r.hidden;
+      moreTd.append(cSel);
+      if (r.color) { const c = el("input"); c.type = "color"; c.value = r.color; c.oninput = () => { r.color = c.value.toUpperCase(); markDirty(); }; moreTd.append(c); }
+      const hl = el("label", "a-check-sm"); const h = el("input"); h.type = "checkbox"; h.checked = r.hidden;
       h.onchange = () => { r.hidden = h.checked; markDirty(); renderStaff(); };
-      hidTd.append(h); tr.append(hidTd);
+      hl.append(h, el("span", null, t("col.hidden"))); moreTd.append(hl);
+      tr.append(moreTd);
       const xTd = el("td", "c"); const x = el("button", "x", "×"); x.type = "button"; x.title = t("teams.del");
       x.onclick = () => { S.staff = S.staff.filter(y => y !== r); markDirty(); renderStaff(); renderTeams(); };
       xTd.append(x); tr.append(xTd);
@@ -268,7 +285,7 @@
       fromConfig(body.config);
       S.dirty = false;
       renderTeams(); renderStaff(); preview();
-      whoOptions(); loadTasks();
+      renderPeople(); loadTasks();
       status("");
     } catch {
       status(t("loadFail"), "err");
@@ -290,7 +307,7 @@
       S.loaded = body.config;
       fromConfig(body.config);               // 서버가 닫은 값(잘린 이름 등)으로 다시 그린다
       S.dirty = false;
-      renderTeams(); renderStaff(); preview(); whoOptions();
+      renderTeams(); renderStaff(); preview(); renderPeople();
       status(t("saved") + (portChanged ? t("portNote") : ""), "ok");
     } catch (e) {
       status(`${t("saveFail")} — ${e.message}`, "err");
@@ -299,37 +316,68 @@
     }
   }
   // ---------- 업무 지시 ----------
-  const W = { tasks: [], open: new Set(), timer: 0, demo: false };
-  function whoOptions() {
-    const sel = $("w-who"), cur = sel.value;
-    sel.replaceChildren();
-    const rows = S.staff.filter(r => r.path.trim() && r.key.trim());
-    const extra = S.seen.filter(p => p.path && !rows.some(r => keyOf(r.key) === keyOf(p.folder) || r.path.trim() === p.path));
-    for (const r of rows) { const o = el("option", null, `${r.name.trim() || r.key} (${r.key})`); o.value = r.key; o.dataset.path = r.path.trim(); sel.append(o); }
-    for (const p of extra) { const o = el("option", null, `${p.name} (${p.folder})`); o.value = p.path; o.dataset.path = p.path; o.dataset.cwd = "1"; sel.append(o); }
-    if (!sel.options.length) { const o = el("option", null, t("work.none")); o.value = ""; sel.append(o); }
-    sel.value = [...sel.options].some(o => o.value === cur) ? cur : sel.options[0]?.value || "";
-    $("w-path").textContent = sel.selectedOptions[0]?.dataset.path || "";
+  // 고를 수 있는 사람 = 사무실에 켜진 프로젝트(경로를 안다) + 명부에서 경로를 적어 둔 직원. 둘 다 없으면 직접 폴더 경로.
+  const W = { tasks: [], open: new Set(), timer: 0, demo: false, pick: null };
+  function candidates() {
+    const out = [];
+    for (const p of S.seen) {
+      if (!p.path) continue;
+      const r = S.staff.find(x => keyOf(x.key) === keyOf(p.folder) || (x.path && x.path.trim() === p.path));
+      out.push({ id: "seen:" + p.path, name: r?.name.trim() || p.name, folder: p.folder, path: p.path, live: true,
+                 team: r?.team || "", color: S.teams.find(x => x.name === r?.team)?.color || "" });
+    }
+    for (const r of S.staff) {
+      if (!r.path.trim() || !r.key.trim() || out.some(o => o.path === r.path.trim())) continue;
+      out.push({ id: "staff:" + r.key, name: r.name.trim() || r.key, folder: r.key, path: r.path.trim(), live: false,
+                 team: r.team, color: S.teams.find(x => x.name === r.team)?.color || "" });
+    }
+    return out;
   }
-  $("w-who").onchange = () => { $("w-path").textContent = $("w-who").selectedOptions[0]?.dataset.path || ""; };
+  function renderPeople() {
+    const box = $("w-people");
+    box.replaceChildren();
+    const list = candidates();
+    if (!list.length) { box.append(el("p", "a-empty", t("work.none"))); W.pick = null; return; }
+    if (!W.pick || !list.some(c => c.id === W.pick)) W.pick = list[0].id;
+    for (const c of list) {
+      const b = el("button", "a-person" + (c.id === W.pick ? " on" : "")); b.type = "button";
+      const dot = el("i", "o-dot"); dot.style.background = c.color || "#9AA5B1";
+      const name = el("b", null, c.name);
+      const meta = el("small", null, [c.team, c.live ? t("work.live") : t("work.listed")].filter(Boolean).join(" · "));
+      const pth = el("span", "a-mono", c.path);
+      b.append(dot, name, meta, pth);
+      b.title = c.path;
+      b.onclick = () => { W.pick = c.id; $("w-cwd").value = ""; renderPeople(); };
+      box.append(b);
+    }
+  }
+  $("w-cwd").addEventListener("input", () => { if ($("w-cwd").value.trim()) { W.pick = null; renderPeople(); } });
+  function picked() {
+    const typed = $("w-cwd").value.trim();
+    if (typed) return { who: typed.split(/[\\/]/).filter(Boolean).pop() || typed, cwd: typed };
+    const c = candidates().find(x => x.id === W.pick);
+    return c ? { who: c.name, cwd: c.path, key: c.folder } : null;
+  }
   async function sendWork() {
-    const o = $("w-who").selectedOptions[0];
-    const task = $("w-task").value.trim();
-    if (!o || !o.value || !task) return;
-    if (W.demo) { wstatus(t("work.demo"), "err"); return; }
-    const payload = { task, mode: $("w-mode").value, who: o.textContent.replace(/ \(.*\)$/, "") };
-    if (o.dataset.cwd) payload.cwd = o.value; else { payload.key = o.value; payload.cwd = o.dataset.path; }
-    $("w-send").disabled = true;
+    const who = picked(), task = $("w-task").value.trim();
+    if (!who) return wstatus(t("work.needWho"), "err");
+    if (!task) { wstatus(t("work.needTask"), "err"); $("w-task").focus(); return; }
+    if (W.demo) return wstatus(t("work.demo"), "err");
+    const mode = document.querySelector("input[name=w-mode]:checked")?.value || "acceptEdits";
+    $("w-send").disabled = true; wstatus("…");
     try {
-      const res = await fetch("/api/admin/task", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify(payload) });
+      const res = await fetch("/api/admin/task", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" },
+        body: JSON.stringify({ who: who.who, cwd: who.cwd, key: who.key || "", task, mode }) });
       const body = await res.json().catch(() => ({}));
       if (!res.ok || !body.ok) throw new Error(body.error || String(res.status));
       $("w-task").value = "";
       wstatus(t("work.sent"), "ok");
       W.open.add(body.task.id);
       await loadTasks();
+      $("w-tasks").scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (e) {
-      wstatus(`${t("work.fail")} — ${e.message}`, "err");
+      const m = String(e.message || "");
+      wstatus(`${t("work.fail")} — ${/folder not found/.test(m) ? t("work.noDir") + ": " + who.cwd : m}`, "err");
     } finally {
       $("w-send").disabled = false;
     }
@@ -348,13 +396,16 @@
   function renderTasks() {
     const box = $("w-tasks");
     box.replaceChildren();
+    const running = W.tasks.filter(x => x.status === "running").length;
+    $("w-count").textContent = W.tasks.length ? `${W.tasks.length}` + (running ? ` · ${t("st.running")} ${running}` : "") : "";
     if (!W.tasks.length) { box.append(el("li", "a-empty", t("work.empty"))); return; }
     for (const x of W.tasks) {
-      const li = el("li", "a-task");
+      const li = el("li", "a-task " + x.status);
       const h = el("div", "h");
       h.append(el("span", `a-chip ${x.status}`, t("st." + x.status)), el("b", null, x.who), el("time", null, x.startedAt.replace("T", " ").slice(5, 16)));
-      const toggle = el("button", "a-btn", t("work.log")); toggle.type = "button";
-      toggle.onclick = () => { if (W.open.has(x.id)) W.open.delete(x.id); else W.open.add(x.id); renderTasks(); };
+      const open = W.open.has(x.id) || x.status === "running";
+      const toggle = el("button", "a-btn", open ? t("work.hide") : t("work.log")); toggle.type = "button";
+      toggle.onclick = () => { if (open) { W.open.delete(x.id); if (x.status === "running") W.open.add("!" + x.id); } else { W.open.add(x.id); W.open.delete("!" + x.id); } renderTasks(); };
       h.append(toggle);
       if (x.status === "running") {
         const stop = el("button", "a-btn danger x", t("work.stop")); stop.type = "button";
@@ -362,12 +413,26 @@
         h.append(stop);
       }
       li.append(h, el("p", "t", x.task.length > 300 ? x.task.slice(0, 300) + "…" : x.task));
-      if (W.open.has(x.id)) li.append(el("pre", null, (x.error ? `[error] ${x.error}\n` : "") + (x.log || "") + (x.status === "running" ? "\n…" : "")));
+      const show = open && !W.open.has("!" + x.id);
+      if (show) {
+        const err = x.error ? `[error] ${/ENOENT/.test(x.error) ? t("work.noBin") + " (" + x.bin + ")" : x.error}\n` : "";
+        li.append(el("pre", null, err + (x.log || "") + (x.status === "running" ? "\n…" : "")));
+      }
       box.append(li);
     }
   }
   $("w-send").onclick = sendWork;
   $("w-task").addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") sendWork(); });
+
+  // ---------- 탭 ----------
+  function showTab(name) {
+    for (const b of document.querySelectorAll("#tabs button")) b.classList.toggle("on", b.dataset.tab === name);
+    for (const sec of document.querySelectorAll(".a-tab")) sec.hidden = sec.dataset.tab !== name;
+    $("a-save-box").hidden = name === "work";
+    try { localStorage.setItem("office.admin.tab", name); } catch { /* 무시 */ }
+    if (name === "work") { renderPeople(); loadTasks(); }
+  }
+  for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => showTab(b.dataset.tab);
 
   $("a-save").onclick = save;
   $("a-reset").onclick = () => { if (S.loaded) { fromConfig(S.loaded); S.dirty = false; renderTeams(); renderStaff(); preview(); status(""); } };
@@ -378,6 +443,7 @@
   // ---------- 고정 문구 ----------
   function applyText() {
     for (const e of document.querySelectorAll("[data-t]")) e.textContent = t(e.dataset.t);
+    for (const e of document.querySelectorAll("[data-t-ph]")) e.placeholder = t(e.dataset.tPh);
     document.title = `${t("title")} — ${I18N.t("title")}`;
     document.documentElement.lang = lang();
   }
@@ -385,6 +451,9 @@
   (async () => {
     await I18N.init();
     applyText();
+    let tab = "work";
+    try { tab = localStorage.getItem("office.admin.tab") || "work"; } catch { /* 무시 */ }
+    showTab(["work", "people", "office"].includes(tab) ? tab : "work");
     await load();
   })();
 })();
