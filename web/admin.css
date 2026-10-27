@@ -196,3 +196,35 @@ textarea:focus { outline: 2px solid var(--sub); outline-offset: -1px; }
 .a-person .badge { grid-column: 2; justify-self: start; margin-top: 2px; padding: 0 6px; border-radius: 999px; font-size: 11px; background: var(--ask-bg); color: var(--ask); font-weight: 700; }
 .a-person .badge.run { background: var(--work-bg); color: var(--work); }
 @media (max-width: 900px) { .a-chatwrap { grid-template-columns: 1fr; height: auto; } .a-msgs { max-height: 50vh; } }
+
+/* 오늘 패널(업무 일지) — 자비스 TODAY */
+.a-chatwrap { grid-template-columns: 260px 1fr 280px; }
+.a-today { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.a-today h2 { margin: 0; font-size: 14px; display: flex; align-items: baseline; gap: 6px; }
+.a-today h2 small, .a-today h3 { font-size: 12px; font-weight: 600; color: var(--ink3); margin: 6px 0 0; }
+.a-jlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.a-jlist li { display: grid; grid-template-columns: auto auto 1fr; gap: 6px; align-items: baseline; font-size: 12px; padding: 3px 4px; border-radius: 4px; }
+.a-jlist li time { font-family: var(--mono); color: var(--ink3); }
+.a-jlist li .k { font-size: 11px; padding: 0 5px; border-radius: 3px; background: #EEF1EF; color: #44504A; }
+.a-jlist li .k.activity { background: var(--work-bg); color: var(--work); }
+.a-jlist li .k.question { background: var(--ask-bg); color: var(--ask); }
+.a-jlist li .k.todo { background: var(--sub-bg); color: var(--sub); }
+.a-jlist li .k.briefing { background: #FFF1D6; color: #7A4A00; }
+.a-jlist li.done { opacity: .5; text-decoration: line-through; }
+.a-jlist li.clickable { cursor: pointer; }
+.a-jlist li.clickable:hover { background: var(--soft); }
+.a-jlist .a-empty { font-size: 12px; padding: 4px; }
+.a-jform { display: flex; gap: 4px; margin-top: 6px; }
+.a-jform select { min-height: 28px; font-size: 12px; }
+.a-jform input { flex: 1; min-height: 28px; font-size: 12px; }
+.a-jbtns { display: flex; gap: 4px; }
+.a-jbtns .a-btn { flex: 1; font-size: 12px; padding: 3px 6px; }
+.a-brief { margin: 0; padding: 8px; background: #FFF8E8; border: 1px solid #F0D9A8; border-radius: 6px; font: 12px/1.45 var(--sans); white-space: pre-wrap; }
+.a-notice { position: fixed; right: 16px; bottom: 16px; z-index: 50; max-width: 360px; padding: 10px 12px; background: #FFF; border: 1px solid #F0D9A8; border-left: 4px solid #D99A2B; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12); font-size: 12px; white-space: pre-wrap; }
+.a-notice b { display: block; margin-bottom: 4px; font-size: 13px; }
+@media (max-width: 1100px) { .a-chatwrap { grid-template-columns: 240px 1fr; } .a-today { grid-column: 1 / -1; } }
+@media (max-width: 900px) { .a-chatwrap { grid-template-columns: 1fr; } }
+
+.a-chat-ops .a-btn { white-space: nowrap; }
+.a-chat-head > div:first-child { min-width: 0; }
+.a-chat-head small { word-break: break-all; }

@@ -14,7 +14,9 @@ import { APP, health, openBrowser, removePidFile, urlOf } from './control.mjs';
 import { clearTasks, deleteTask, listTasks, startTask, stopTask } from './tasks.mjs';
 import { deleteProcedure, imagePath, listProcedures, procedurePrompt, readProcedure, saveProcedure } from './procedures.mjs';
 import { deleteSchedule, listSchedules, runSchedule, startScheduler, upsertSchedule } from './schedules.mjs';
-import { profilePrompt, staffFor } from './staff.mjs';
+import { staffContext, staffFor } from './staff.mjs';
+import { briefing as makeBriefing, getDay, pending, record as journalRecord, setDone } from './journal.mjs';
+import { drainNotices, startBriefer } from './briefer.mjs';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -173,7 +175,7 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
           if (typeof body.procedure === 'string' && body.procedure) parts.push(procedurePrompt(body.procedure));
           if (typeof body.task === 'string' && body.task.trim()) parts.push(body.task);
           const rec = startTask({ who: body.who || key, cwd, task: parts.join('\n\n'), mode: body.mode, model: body.model, continueSession: !!body.continueSession,
-            systemPrompt: profilePrompt(cfg, key || path.basename(cwd)), replyTo: typeof body.replyTo === 'string' ? body.replyTo : '' });
+            systemPrompt: staffContext(cfg, key || path.basename(cwd), cwd), replyTo: typeof body.replyTo === 'string' ? body.replyTo : '' });
           return sendJson(res, 200, { ok: true, task: rec });
         } catch (e) {
           return sendJson(res, 400, { error: e.message, code: e.code || 'bad', parent: e.parent || '' });
@@ -207,6 +209,25 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
       }
       if (adminWrite && route === '/api/admin/task/delete') return sendJson(res, 200, { ok: deleteTask(String(body.id || '')) });
       if (adminWrite && route === '/api/admin/tasks/clear') return sendJson(res, 200, { ok: true, removed: clearTasks() });
+      if (adminWrite && route === '/api/admin/journal') {                 // 할 일·메모 추가, 완료 처리
+        try {
+          const cwd = String(body.cwd || '').replace(/^["']+|["']+$/g, '');
+          if (body.done !== undefined && body.id) return sendJson(res, 200, { ok: true, event: setDone(cwd, String(body.id), !!body.done) });
+          return sendJson(res, 200, { ok: true, event: journalRecord(cwd, { kind: ['todo', 'note'].includes(body.kind) ? body.kind : 'note', text: body.text, at: body.at || null }) });
+        } catch (e) {
+          return sendJson(res, 400, { error: e.message });
+        }
+      }
+      if (adminWrite && route === '/api/admin/briefing') {                // 지금 브리핑(규칙 기반 — 외부 전송 없음)
+        const cwd = String(body.cwd || '');
+        try {
+          const text = makeBriefing(cwd, body.type === 'wrapup' ? 'wrapup' : 'morning', String(body.who || ''));
+          journalRecord(cwd, { kind: 'briefing', text: text.slice(0, 300), meta: { type: body.type === 'wrapup' ? 'wrapup' : 'morning', manual: true } });
+          return sendJson(res, 200, { ok: true, text });
+        } catch (e) {
+          return sendJson(res, 400, { error: e.message });
+        }
+      }
       if (adminWrite && route === '/api/admin/task/stop') {
         const r = stopTask(String(body.id || ''));
         return sendJson(res, r.ok ? 200 : 404, r);
@@ -224,6 +245,16 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
       if (req.method !== 'GET') return send(res, 405, 'method not allowed', undefined, { Allow: 'GET' });
       if (route === '/api/admin/tasks') return sendJson(res, 200, { tasks: listTasks() });
       if (route === '/api/admin/schedules') return sendJson(res, 200, { schedules: listSchedules() });
+      if (route === '/api/admin/notices') return sendJson(res, 200, { notices: drainNotices() });
+      const qs0 = new URLSearchParams(q >= 0 ? raw.slice(q + 1) : '');
+      if (route === '/api/admin/journal') {
+        const cwd = String(qs0.get('cwd') || '');
+        try {
+          return sendJson(res, 200, { date: qs0.get('date') || null, events: getDay(cwd, qs0.get('date') || undefined), pending: pending(cwd) });
+        } catch (e) {
+          return sendJson(res, 400, { error: e.message });
+        }
+      }
       const qs = new URLSearchParams(q >= 0 ? raw.slice(q + 1) : '');
       if (route === '/api/admin/procedures') return sendJson(res, 200, { procedures: listProcedures(String(qs.get('cwd') || '')) });
       if (route === '/api/admin/procedure') {
@@ -305,7 +336,7 @@ async function main() {
       `config.json 의 port 나 CLAUDE_OFFICE_PORT 로 바꾸세요 / change "port" in config.json or set CLAUDE_OFFICE_PORT.`);
     process.exit(1);
   });
-  if (!opts.demo) startScheduler();
+  if (!opts.demo) { startScheduler(); startBriefer(); }
   server.listen(port, '127.0.0.1', () => {
     try {
       fs.mkdirSync(officeHome(), { recursive: true });
