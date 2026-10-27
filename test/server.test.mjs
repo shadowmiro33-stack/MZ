@@ -347,3 +347,19 @@ test('반복 업무: 등록·다음 실행 시각·지금 실행·끄기·삭제
   assert.equal(JSON.parse((await req(port, '/api/admin/schedule/delete', { method: 'POST', headers: good, body: JSON.stringify({ id: s.id }) })).body).ok, true);
   assert.equal(JSON.parse((await req(port, '/api/admin/schedules')).body).schedules.length, 0);
 });
+
+test('업무 삭제·비우기: 끝난 것만 지우고 실행 중은 남긴다', async () => {
+  const { tasksDir } = await import('../server/tasks.mjs');
+  const dir = tasksDir(); fs.mkdirSync(dir, { recursive: true });
+  const mk = (id, ended) => fs.writeFileSync(path.join(dir, `${id}.json`), JSON.stringify({ id, who: 'x', cwd: tmp, task: 't', startedAt: '2026-01-01T00:00:00Z', endedAt: ended ? '2026-01-01T00:01:00Z' : null, exitCode: ended ? 0 : null, pid: ended ? 1 : process.pid }));
+  mk('20260101-000000-done', true); mk('20260101-000001-live', false);
+  const good = { 'Content-Type': 'application/json', 'X-Office-Admin': '1' };
+  assert.equal(JSON.parse((await req(port, '/api/admin/task/delete', { method: 'POST', headers: good, body: JSON.stringify({ id: '20260101-000000-done' }) })).body).ok, true);
+  assert.ok(!fs.existsSync(path.join(dir, '20260101-000000-done.json')));
+  assert.equal(JSON.parse((await req(port, '/api/admin/task/delete', { method: 'POST', headers: good, body: JSON.stringify({ id: '../x' }) })).body).ok, false);
+  mk('20260101-000002-done2', true);
+  const r = JSON.parse((await req(port, '/api/admin/tasks/clear', { method: 'POST', headers: good, body: '{}' })).body);
+  assert.ok(r.removed >= 1);
+  assert.ok(fs.existsSync(path.join(dir, '20260101-000001-live.json'))); // 살아 있는 pid = 남긴다
+  fs.rmSync(path.join(dir, '20260101-000001-live.json'), { force: true });
+});
