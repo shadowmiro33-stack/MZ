@@ -17,6 +17,7 @@
   <span id="a-demo" class="a-demo" data-t="demo" hidden>데모 서버</span>
   <nav id="tabs" class="a-tabs" role="tablist">
     <button type="button" data-tab="work" class="on" data-t="tab.work">업무</button>
+    <button type="button" data-tab="proc" data-t="tab.proc">업무 절차</button>
     <button type="button" data-tab="people" data-t="tab.people">직원·팀</button>
     <button type="button" data-tab="office" data-t="tab.office">사무실 설정</button>
   </nav>
@@ -38,6 +39,22 @@
     </div>
     <div class="a-card">
       <h2 data-t="work.step2">2. 무슨 일을?</h2>
+      <div class="a-grid">
+        <label><span data-t="work.proc">절차서</span><select id="w-proc"><option value="" data-t="work.proc.none">(없음 — 아래 글만)</option></select><small data-t="work.proc.hint">업무 절차 탭에서 만든 절차를 고르면 "그 절차대로"가 자동으로 붙습니다</small></label>
+        <label><span data-t="work.when">언제</span>
+          <select id="w-when">
+            <option value="now" data-t="when.now">지금 한 번</option>
+            <option value="daily" data-t="when.daily">매일 정해진 시각</option>
+            <option value="hourly" data-t="when.hourly">매시간</option>
+            <option value="minutes" data-t="when.minutes">N분마다</option>
+          </select>
+          <span class="a-when-x">
+            <input id="w-time" type="time" value="07:00" hidden>
+            <input id="w-min" type="number" min="5" max="1440" step="5" value="60" hidden>
+            <label class="a-check-sm"><input id="w-cont" type="checkbox"><span data-t="work.cont">지난 대화에 이어서</span></label>
+          </span>
+        </label>
+      </div>
       <textarea id="w-task" rows="5" data-t-ph="work.task.ph" placeholder="예: README 를 읽고 프로젝트 구조를 docs/STRUCTURE.md 에 정리해줘"></textarea>
       <div class="a-modes" role="radiogroup">
         <label class="a-mode"><input type="radio" name="w-mode" value="acceptEdits" checked><span><b data-t="mode.acceptEdits">파일만 고치기</b><small data-t="mode.acceptEdits.d">코드를 읽고 고칩니다. 명령 실행(빌드·테스트·git)은 하지 않습니다 — 가장 안전</small></span></label>
@@ -50,9 +67,39 @@
         <span id="w-status" class="a-status"></span>
       </div>
     </div>
+    <div class="a-card" id="sched-card">
+      <h2><span data-t="sched">반복 업무</span> <small data-t="sched.hint">서버가 켜져 있는 동안 때가 되면 자동으로 보냅니다(Claude 세션이 시작될 때 서버도 켜집니다)</small></h2>
+      <ul id="w-scheds" class="a-tasks"></ul>
+    </div>
     <div class="a-card">
       <h2><span data-t="work.list">업무 목록</span> <small id="w-count"></small></h2>
       <ul id="w-tasks" class="a-tasks"></ul>
+    </div>
+  </section>
+
+  <!-- ===== 업무 절차 ===== -->
+  <section class="a-tab" data-tab="proc" hidden>
+    <div class="a-card">
+      <h2 data-t="proc.title">업무 절차</h2>
+      <p class="a-hint" data-t="proc.hint">사람이 하던 일을 단계별로 적습니다. 단계마다 스크린샷을 붙여 넣으면(Ctrl+V) Claude 가 그 화면을 보고 따라 합니다. 프로젝트 폴더의 .claude/procedures/ 에 저장됩니다.</p>
+      <div class="a-grid">
+        <label><span data-t="proc.folder">프로젝트 폴더</span><select id="p-folder"></select></label>
+        <label><span data-t="proc.list">절차</span><div class="a-row-inline"><select id="p-list"></select><button type="button" id="p-new" class="a-btn" data-t="proc.new">+ 새 절차</button></div></label>
+      </div>
+    </div>
+    <div class="a-card" id="p-editor" hidden>
+      <div class="a-grid">
+        <label><span data-t="proc.name">절차 이름</span><input id="p-name" type="text" maxlength="60" placeholder="예: 매거진 수집·발행"></label>
+        <label class="a-wide"><span data-t="proc.memo">메모(목적·주의)</span><input id="p-memo" type="text" maxlength="4000" placeholder="예: 매일 아침 기사 수집 후 발행. 발행 전 out/ 폴더 확인"></label>
+      </div>
+      <h3 data-t="proc.steps">단계</h3>
+      <ol id="p-steps" class="a-steps"></ol>
+      <div class="a-actions">
+        <button type="button" id="p-add" class="a-btn" data-t="proc.add">+ 단계 추가</button>
+        <button type="button" id="p-save" class="a-btn primary" data-t="proc.save">절차 저장</button>
+        <button type="button" id="p-del" class="a-btn danger" data-t="proc.del">삭제</button>
+        <span id="p-status" class="a-status"></span>
+      </div>
     </div>
   </section>
 

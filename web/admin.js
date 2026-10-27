@@ -34,7 +34,19 @@
       "ph.key": "폴더 이름 또는 C:\\경로", "ph.name": "폴더 이름 그대로", "ph.title": "예: 프론트엔드",
       dup: "같은 폴더가 두 번 있습니다", confirmLeave: "저장하지 않은 변경이 있습니다. 나갈까요?",
       "ph.path": "C:\\work\\프로젝트",
-      "tab.work": "업무", "tab.people": "직원·팀", "tab.office": "사무실 설정", "col.more": "더",
+      "tab.work": "업무", "tab.proc": "업무 절차", "tab.people": "직원·팀", "tab.office": "사무실 설정", "col.more": "더",
+      "work.proc": "절차서", "work.proc.none": "(없음 — 아래 글만)", "work.proc.hint": "업무 절차 탭에서 만든 절차를 고르면 \"그 절차대로\"가 자동으로 붙습니다",
+      "work.when": "언제", "when.now": "지금 한 번", "when.daily": "매일 정해진 시각", "when.hourly": "매시간", "when.minutes": "N분마다", "work.cont": "지난 대화에 이어서",
+      "work.needAny": "절차를 고르거나 업무 내용을 적으세요", "work.scheduled": "반복 업무로 등록했습니다 — 아래 '반복 업무'에서 확인",
+      sched: "반복 업무", "sched.hint": "서버가 켜져 있는 동안 때가 되면 자동으로 보냅니다(Claude 세션이 시작될 때 서버도 켜집니다)",
+      "sched.empty": "반복 업무가 없습니다", "sched.run": "지금 실행", "sched.on": "켜기", "sched.off": "끄기", "sched.del": "삭제",
+      "sched.next": "다음", "sched.last": "최근", "sched.runs": "{n}회", "sched.daily": "매일 {t}", "sched.hourly": "매시간", "sched.minutes": "{n}분마다", "sched.once": "한 번",
+      "proc.title": "업무 절차", "proc.hint": "사람이 하던 일을 단계별로 적습니다. 단계마다 스크린샷을 붙여 넣으면(Ctrl+V) Claude 가 그 화면을 보고 따라 합니다. 프로젝트 폴더의 .claude/procedures/ 에 저장됩니다.",
+      "proc.folder": "프로젝트 폴더", "proc.list": "절차", "proc.new": "+ 새 절차", "proc.pick": "(절차를 고르거나 새로 만드세요)", "proc.name": "절차 이름", "proc.memo": "메모(목적·주의)",
+      "proc.steps": "단계", "proc.add": "+ 단계 추가", "proc.save": "절차 저장", "proc.del": "삭제", "proc.saved": "저장했습니다 — 업무 탭에서 절차서로 고를 수 있습니다",
+      "proc.needName": "절차 이름을 적으세요", "proc.needStep": "단계를 하나 이상 적으세요", "proc.shot": "스크린샷 붙여 넣기(Ctrl+V) 또는 클릭해서 파일 선택", "proc.shotRm": "그림 지우기",
+      "proc.confirmDel": "이 절차를 지울까요? 폴더의 절차서 파일도 지워집니다.", "proc.stepPh": "이 단계에서 하는 일 — 예: NewsArticleCollector.exe 를 실행하고 '수집' 버튼을 누른다",
+      "proc.noFolder": "먼저 사무실에 프로젝트를 켜 두거나 직원·팀 탭에서 직원에게 경로를 적어 두세요",
       "work.step1": "1. 누구에게?", "work.step1.hint": "사무실에 켜져 있는 프로젝트는 바로 고를 수 있습니다. 다른 폴더는 아래에 경로를 적으세요.",
       "work.step2": "2. 무슨 일을?", "work.other": "다른 폴더", "work.task.ph": "예: README 를 읽고 프로젝트 구조를 docs/STRUCTURE.md 에 정리해줘",
       "work.send": "업무 보내기", "work.list": "업무 목록", "work.live": "켜져 있음", "work.listed": "명부",
@@ -74,7 +86,19 @@
       "ph.key": "folder name or full path", "ph.name": "same as folder", "ph.title": "e.g. Frontend",
       dup: "This folder appears twice", confirmLeave: "You have unsaved changes. Leave anyway?",
       "ph.path": "/abs/path/to/project",
-      "tab.work": "Work", "tab.people": "People & teams", "tab.office": "Office settings", "col.more": "More",
+      "tab.work": "Work", "tab.proc": "Procedures", "tab.people": "People & teams", "tab.office": "Office settings", "col.more": "More",
+      "work.proc": "Procedure", "work.proc.none": "(none — text below only)", "work.proc.hint": "Pick a procedure from the Procedures tab and \"follow it\" is added automatically",
+      "work.when": "When", "when.now": "Now, once", "when.daily": "Daily at a time", "when.hourly": "Every hour", "when.minutes": "Every N minutes", "work.cont": "Continue last conversation",
+      "work.needAny": "Pick a procedure or write a task", "work.scheduled": "Added as a recurring task — see 'Recurring' below",
+      sched: "Recurring", "sched.hint": "Runs automatically while the server is up (the server starts whenever a Claude session starts)",
+      "sched.empty": "No recurring tasks", "sched.run": "Run now", "sched.on": "Enable", "sched.off": "Disable", "sched.del": "Delete",
+      "sched.next": "next", "sched.last": "last", "sched.runs": "{n} runs", "sched.daily": "daily at {t}", "sched.hourly": "hourly", "sched.minutes": "every {n} min", "sched.once": "once",
+      "proc.title": "Procedures", "proc.hint": "Write down what a person does, step by step. Paste a screenshot per step (Ctrl+V) and Claude follows the screen. Saved under .claude/procedures/ in the project folder.",
+      "proc.folder": "Project folder", "proc.list": "Procedure", "proc.new": "+ New", "proc.pick": "(pick one or create new)", "proc.name": "Name", "proc.memo": "Notes (purpose, cautions)",
+      "proc.steps": "Steps", "proc.add": "+ Add step", "proc.save": "Save procedure", "proc.del": "Delete", "proc.saved": "Saved — pick it in the Work tab",
+      "proc.needName": "Give the procedure a name", "proc.needStep": "Write at least one step", "proc.shot": "Paste a screenshot (Ctrl+V) or click to choose a file", "proc.shotRm": "Remove image",
+      "proc.confirmDel": "Delete this procedure? The file in the project folder is removed too.", "proc.stepPh": "What happens in this step — e.g. run NewsArticleCollector.exe and press 'Collect'",
+      "proc.noFolder": "Open a project in the office first, or give an employee a path in People & teams",
       "work.step1": "1. Who?", "work.step1.hint": "Projects currently open in the office can be picked directly. For another folder, type its path below.",
       "work.step2": "2. What?", "work.other": "Other folder", "work.task.ph": "e.g. Read README and write the project structure to docs/STRUCTURE.md",
       "work.send": "Send task", "work.list": "Tasks", "work.live": "online", "work.listed": "listed",
@@ -287,7 +311,7 @@
       fromConfig(body.config);
       S.dirty = false;
       renderTeams(); renderStaff(); preview();
-      renderPeople(); loadTasks();
+      renderPeople(); loadProcList(); loadTasks(); loadScheds();
       status("");
     } catch {
       status(t("loadFail"), "err");
@@ -349,11 +373,54 @@
       const pth = el("span", "a-mono", c.path);
       b.append(dot, name, meta, pth);
       b.title = c.path;
-      b.onclick = () => { W.pick = c.id; $("w-cwd").value = ""; renderPeople(); };
+      b.onclick = () => { W.pick = c.id; $("w-cwd").value = ""; renderPeople(); loadProcList(); };
       box.append(b);
     }
   }
   $("w-cwd").addEventListener("input", () => { if ($("w-cwd").value.trim()) { W.pick = null; renderPeople(); } });
+  $("w-cwd").addEventListener("change", loadProcList);
+  $("w-when").onchange = () => { $("w-time").hidden = $("w-when").value !== "daily"; $("w-min").hidden = $("w-when").value !== "minutes"; };
+  async function loadProcList() {
+    const who = picked(), sel = $("w-proc"), cur = sel.value;
+    sel.replaceChildren(Object.assign(el("option", null, t("work.proc.none")), { value: "" }));
+    if (!who) return;
+    try {
+      const r = await fetch("/api/admin/procedures?cwd=" + encodeURIComponent(who.cwd), { cache: "no-store" });
+      for (const pr of (await r.json()).procedures || []) { const o = el("option", null, `${pr.name} (${pr.steps})`); o.value = pr.slug; sel.append(o); }
+      sel.value = [...sel.options].some(o => o.value === cur) ? cur : "";
+    } catch { /* 없음 */ }
+  }
+  // ---------- 반복 업무 ----------
+  async function loadScheds() {
+    try {
+      const r = await fetch("/api/admin/schedules", { cache: "no-store" });
+      renderScheds(((await r.json()).schedules || []));
+    } catch { /* 다음에 */ }
+  }
+  const everyText = x => (x.every === "daily" ? t("sched.daily", { t: x.time }) : x.every === "hourly" ? t("sched.hourly") : x.every === "minutes" ? t("sched.minutes", { n: x.minutes }) : t("sched.once"));
+  const local = iso => (iso && !Number.isNaN(Date.parse(iso)) ? new Date(iso).toLocaleString("sv").slice(5, 16) : "—");   // 보는 사람 시간대로 MM-DD HH:MM
+  function renderScheds(list) {
+    const box = $("w-scheds");
+    box.replaceChildren();
+    if (!list.length) { box.append(el("li", "a-empty", t("sched.empty"))); return; }
+    const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify(body) });
+    for (const x of list) {
+      const li = el("li", "a-task a-sched" + (x.enabled ? "" : " off"));
+      const h = el("div", "h");
+      h.append(el("span", "a-chip " + (x.enabled ? "running" : ""), everyText(x)), el("b", null, x.who),
+               el("span", "next", `${t("sched.next")} ${x.enabled ? local(x.nextRun) : "—"} · ${t("sched.last")} ${local(x.lastRun)} · ${t("sched.runs", { n: x.runs || 0 })}`));
+      const run = el("button", "a-btn", t("sched.run")); run.type = "button";
+      run.onclick = async () => { const r = await post("/api/admin/schedule/run", { id: x.id }); const b = await r.json().catch(() => ({})); if (!r.ok) alert(b.error || r.status); loadScheds(); loadTasks(); };
+      const tog = el("button", "a-btn", x.enabled ? t("sched.off") : t("sched.on")); tog.type = "button";
+      tog.onclick = async () => { await post("/api/admin/schedule", { ...x, enabled: !x.enabled }); loadScheds(); };
+      const del = el("button", "a-btn danger x", t("sched.del")); del.type = "button";
+      del.onclick = async () => { if (confirm(t("sched.del") + "?")) { await post("/api/admin/schedule/delete", { id: x.id }); loadScheds(); } };
+      h.append(run, tog, del);
+      const what = [x.procedure ? `📋 ${x.procedure}` : "", x.task].filter(Boolean).join(" — ");
+      li.append(h, el("p", "t", what.length > 300 ? what.slice(0, 300) + "…" : what), el("p", "a-mono", x.cwd));
+      box.append(li);
+    }
+  }
   function picked() {
     const typed = $("w-cwd").value.trim();
     if (typed) { const c = typed.replace(/^["\']+|["\']+$/g, ""); return { who: c.split(/[\\/]/).filter(Boolean).pop() || c, cwd: c }; }
@@ -363,13 +430,22 @@
   async function sendWork() {
     const who = picked(), task = $("w-task").value.trim();
     if (!who) { wstatus(t("work.needWho"), "err"); alert(t("work.needWho")); return; }
-    if (!task) { wstatus(t("work.needTask"), "err"); $("w-task").focus(); alert(t("work.needTask")); return; }
+    if (!task && !$("w-proc").value) { wstatus(t("work.needAny"), "err"); $("w-task").focus(); alert(t("work.needAny")); return; }
     if (W.demo) { wstatus(t("work.demo"), "err"); alert(t("work.demo")); return; }
     const mode = document.querySelector("input[name=w-mode]:checked")?.value || "acceptEdits";
+    const procedure = $("w-proc").value, when = $("w-when").value, continueSession = $("w-cont").checked;
     $("w-send").disabled = true; wstatus("…");
     try {
+      if (when !== "now") {                                              // 반복 업무로 등록
+        const sched = { who: who.who, cwd: who.cwd, key: who.key || "", task, procedure, mode, every: when, time: $("w-time").value || "07:00", minutes: +$("w-min").value || 60, continueSession };
+        const r = await fetch("/api/admin/schedule", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify(sched) });
+        const b = await r.json().catch(() => ({}));
+        if (!r.ok || !b.ok) throw new Error(b.code === "demo" ? t("work.demo") : (b.error || String(r.status)));
+        $("w-task").value = ""; wstatus(t("work.scheduled"), "ok"); await loadScheds(); $("w-scheds").scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
       const res = await fetch("/api/admin/task", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" },
-        body: JSON.stringify({ who: who.who, cwd: who.cwd, key: who.key || "", task, mode }) });
+        body: JSON.stringify({ who: who.who, cwd: who.cwd, key: who.key || "", task, mode, procedure, continueSession }) });
       const body = await res.json().catch(() => ({}));
       if (!res.ok || !body.ok) {
         if (body.code === "notDir" && body.parent) {                     // 파일을 적었다 — 그 파일이 있는 폴더로 바꿔 준다
@@ -437,13 +513,121 @@
   $("w-send").onclick = sendWork;
   $("w-task").addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") sendWork(); });
 
+  // ---------- 업무 절차 편집 ----------
+  const P = { cwd: "", slug: "", steps: [], dirty: false };
+  function renderProcFolders() {
+    const sel = $("p-folder"), cur = sel.value || P.cwd;
+    sel.replaceChildren();
+    const list = candidates();
+    if (!list.length) { sel.append(Object.assign(el("option", null, t("proc.noFolder")), { value: "" })); $("p-list").replaceChildren(); return; }
+    for (const c of list) { const o = el("option", null, `${c.name} — ${c.path}`); o.value = c.path; sel.append(o); }
+    sel.value = [...sel.options].some(o => o.value === cur) ? cur : list[0].path;
+    P.cwd = sel.value;
+    loadProcs();
+  }
+  $("p-folder").onchange = () => { P.cwd = $("p-folder").value; P.slug = ""; $("p-editor").hidden = true; loadProcs(); };
+  async function loadProcs() {
+    const sel = $("p-list");
+    sel.replaceChildren(Object.assign(el("option", null, t("proc.pick")), { value: "" }));
+    if (!P.cwd) return;
+    try {
+      const r = await fetch("/api/admin/procedures?cwd=" + encodeURIComponent(P.cwd), { cache: "no-store" });
+      for (const pr of (await r.json()).procedures || []) { const o = el("option", null, `${pr.name} (${pr.steps})`); o.value = pr.slug; sel.append(o); }
+      sel.value = P.slug && [...sel.options].some(o => o.value === P.slug) ? P.slug : "";
+    } catch { /* 없음 */ }
+  }
+  $("p-list").onchange = async () => {
+    const slug = $("p-list").value;
+    if (!slug) { $("p-editor").hidden = true; return; }
+    const r = await fetch(`/api/admin/procedure?cwd=${encodeURIComponent(P.cwd)}&slug=${encodeURIComponent(slug)}`, { cache: "no-store" });
+    if (!r.ok) return;
+    const pr = (await r.json()).procedure;
+    P.slug = pr.slug; $("p-name").value = pr.name; $("p-memo").value = pr.memo;
+    P.steps = pr.steps.map(st => ({ text: st.text, image: st.image, src: st.image ? `/api/admin/procedure/image?cwd=${encodeURIComponent(P.cwd)}&slug=${encodeURIComponent(pr.slug)}&file=${encodeURIComponent(st.image)}` : "" }));
+    $("p-editor").hidden = false; renderSteps(); pstatus("");
+  };
+  $("p-new").onclick = () => {
+    if (!P.cwd) return alert(t("proc.noFolder"));
+    P.slug = ""; $("p-list").value = ""; $("p-name").value = ""; $("p-memo").value = ""; P.steps = [{ text: "", image: "", src: "" }];
+    $("p-editor").hidden = false; renderSteps(); $("p-name").focus(); pstatus("");
+  };
+  function pstatus(msg, cls) { const s = $("p-status"); s.textContent = msg || ""; s.className = "a-status" + (cls ? " " + cls : ""); }
+  function readImage(file, st) {
+    if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type)) return;
+    const rd = new FileReader();
+    rd.onload = () => { st.image = rd.result; st.src = rd.result; renderSteps(); };
+    rd.readAsDataURL(file);
+  }
+  function renderSteps() {
+    const ol = $("p-steps");
+    ol.replaceChildren();
+    P.steps.forEach((st, i) => {
+      const li = el("li", "a-step");
+      const ta = el("textarea"); ta.placeholder = t("proc.stepPh"); ta.value = st.text; ta.rows = 2;
+      ta.oninput = () => { st.text = ta.value; };
+      ta.addEventListener("paste", e => { const f = [...(e.clipboardData?.files || [])][0]; if (f) { e.preventDefault(); readImage(f, st); } });
+      const shot = el("div", "a-shot"); shot.tabIndex = 0;
+      if (st.src) {
+        const img = el("img"); img.src = st.src; img.alt = ""; shot.append(img);
+        shot.title = t("proc.shotRm");
+        shot.onclick = () => { if (confirm(t("proc.shotRm") + "?")) { st.image = ""; st.src = ""; renderSteps(); } };
+      } else {
+        shot.textContent = t("proc.shot");
+        const inp = el("input"); inp.type = "file"; inp.accept = "image/png,image/jpeg,image/webp"; inp.hidden = true;
+        inp.onchange = () => readImage(inp.files[0], st);
+        shot.append(inp);
+        shot.onclick = () => inp.click();
+      }
+      shot.addEventListener("paste", e => { const f = [...(e.clipboardData?.files || [])][0]; if (f) { e.preventDefault(); readImage(f, st); } });
+      shot.addEventListener("dragover", e => e.preventDefault());
+      shot.addEventListener("drop", e => { e.preventDefault(); readImage(e.dataTransfer?.files?.[0], st); });
+      const ops = el("div", "ops");
+      const up = el("button", "a-btn", "↑"); up.type = "button"; up.disabled = i === 0; up.onclick = () => { [P.steps[i - 1], P.steps[i]] = [P.steps[i], P.steps[i - 1]]; renderSteps(); };
+      const dn = el("button", "a-btn", "↓"); dn.type = "button"; dn.disabled = i === P.steps.length - 1; dn.onclick = () => { [P.steps[i + 1], P.steps[i]] = [P.steps[i], P.steps[i + 1]]; renderSteps(); };
+      const rm = el("button", "a-btn danger", "×"); rm.type = "button"; rm.onclick = () => { P.steps.splice(i, 1); if (!P.steps.length) P.steps.push({ text: "", image: "", src: "" }); renderSteps(); };
+      ops.append(up, dn, rm);
+      li.append(ta, shot, ops);
+      ol.append(li);
+    });
+  }
+  // 페이지 어디에 붙여 넣어도 마지막으로 만진 단계에 그림이 들어가게 — 단계 영역 바깥의 붙여 넣기
+  $("p-add").onclick = () => { P.steps.push({ text: "", image: "", src: "" }); renderSteps(); $("p-steps").lastElementChild?.querySelector("textarea")?.focus(); };
+  $("p-save").onclick = async () => {
+    const name = $("p-name").value.trim();
+    if (!name) { alert(t("proc.needName")); $("p-name").focus(); return; }
+    const steps = P.steps.filter(st => st.text.trim() || st.image).map(st => ({ text: st.text.trim(), image: st.image }));
+    if (!steps.length) { alert(t("proc.needStep")); return; }
+    $("p-save").disabled = true; pstatus("…");
+    try {
+      const r = await fetch("/api/admin/procedure", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" },
+        body: JSON.stringify({ cwd: P.cwd, slug: P.slug, name, memo: $("p-memo").value.trim(), steps }) });
+      const b = await r.json().catch(() => ({}));
+      if (!r.ok || !b.ok) throw new Error(b.error || String(r.status));
+      P.slug = b.procedure.slug;
+      P.steps = b.procedure.steps.map(st => ({ text: st.text, image: st.image, src: st.image ? `/api/admin/procedure/image?cwd=${encodeURIComponent(P.cwd)}&slug=${encodeURIComponent(P.slug)}&file=${encodeURIComponent(st.image)}&v=${Date.now()}` : "" }));
+      renderSteps(); await loadProcs(); $("p-list").value = P.slug; loadProcList();
+      pstatus(t("proc.saved"), "ok");
+    } catch (e) {
+      pstatus(e.message, "err"); alert(e.message);
+    } finally {
+      $("p-save").disabled = false;
+    }
+  };
+  $("p-del").onclick = async () => {
+    if (!P.slug) { $("p-editor").hidden = true; return; }
+    if (!confirm(t("proc.confirmDel"))) return;
+    await fetch("/api/admin/procedure/delete", { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify({ cwd: P.cwd, slug: P.slug }) });
+    P.slug = ""; $("p-editor").hidden = true; await loadProcs(); loadProcList();
+  };
+
   // ---------- 탭 ----------
   function showTab(name) {
     for (const b of document.querySelectorAll("#tabs button")) b.classList.toggle("on", b.dataset.tab === name);
     for (const sec of document.querySelectorAll(".a-tab")) sec.hidden = sec.dataset.tab !== name;
-    $("a-save-box").hidden = name === "work";
+    $("a-save-box").hidden = name === "work" || name === "proc";
     try { localStorage.setItem("office.admin.tab", name); } catch { /* 무시 */ }
-    if (name === "work") { renderPeople(); loadTasks(); }
+    if (name === "work") { renderPeople(); loadProcList(); loadTasks(); loadScheds(); }
+    if (name === "proc") { renderProcFolders(); }
   }
   for (const b of document.querySelectorAll("#tabs button")) b.onclick = () => showTab(b.dataset.tab);
 
@@ -466,7 +650,7 @@
     applyText();
     let tab = "work";
     try { tab = localStorage.getItem("office.admin.tab") || "work"; } catch { /* 무시 */ }
-    showTab(["work", "people", "office"].includes(tab) ? tab : "work");
+    showTab(["work", "proc", "people", "office"].includes(tab) ? tab : "work");
     await load();
   })();
 })();

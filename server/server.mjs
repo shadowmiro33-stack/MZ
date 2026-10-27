@@ -12,6 +12,8 @@ import { decorate, homeOf, isHidden } from './staff.mjs';
 import { REPO_DIR, pathKey } from './paths.mjs';
 import { APP, health, openBrowser, removePidFile, urlOf } from './control.mjs';
 import { listTasks, startTask, stopTask } from './tasks.mjs';
+import { deleteProcedure, imagePath, listProcedures, procedurePrompt, readProcedure, saveProcedure } from './procedures.mjs';
+import { deleteSchedule, listSchedules, runSchedule, startScheduler, upsertSchedule } from './schedules.mjs';
 import { staffFor } from './staff.mjs';
 
 const TYPES = {
@@ -26,7 +28,7 @@ const TYPES = {
 const STARTED_AT = new Date().toISOString(); // health 에 실어 보낸다 — 코드가 이보다 나중에 바뀌었으면 setup 이 재시작
 const SNAPSHOT_MEMO_MS = 1000; // 탭 여러 개가 동시에 물어도 1초에 한 번만 조립
 const MAX_STATIC = 5000;
-const MAX_BODY = 256 * 1024; // 관리자 저장 본문 상한
+const MAX_BODY = 40 * 1024 * 1024; // 관리자 쓰기 본문 상한(절차 스크린샷 포함)
 const ADMIN_HEADER = 'x-office-admin'; // 관리자 쓰기는 이 헤더가 있어야 한다 — 다른 사이트의 폼·fetch 는 못 붙인다(CSRF 방어)
 
 /** 데모 사람들에게도 명부를 입힌다 — 관리자 화면을 데모로 시험해 볼 수 있게 */
@@ -167,10 +169,39 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
           cwd = (s && s.path) || (path.isAbsolute(key) ? key : '');
         }
         try {
-          const rec = startTask({ who: body.who || key, cwd, task: body.task, mode: body.mode, model: body.model });
+          const parts = [];
+          if (typeof body.procedure === 'string' && body.procedure) parts.push(procedurePrompt(body.procedure));
+          if (typeof body.task === 'string' && body.task.trim()) parts.push(body.task);
+          const rec = startTask({ who: body.who || key, cwd, task: parts.join('\n\n'), mode: body.mode, model: body.model, continueSession: !!body.continueSession });
           return sendJson(res, 200, { ok: true, task: rec });
         } catch (e) {
           return sendJson(res, 400, { error: e.message, code: e.code || 'bad', parent: e.parent || '' });
+        }
+      }
+      if (adminWrite && route === '/api/admin/procedure') {
+        try {
+          return sendJson(res, 200, { ok: true, procedure: saveProcedure(String(body.cwd || '').replace(/^["']+|["']+$/g, ''), body) });
+        } catch (e) {
+          return sendJson(res, 400, { error: e.message });
+        }
+      }
+      if (adminWrite && route === '/api/admin/procedure/delete') {
+        return sendJson(res, 200, { ok: deleteProcedure(String(body.cwd || ''), String(body.slug || '')) });
+      }
+      if (adminWrite && route === '/api/admin/schedule') {
+        if (demo) return sendJson(res, 400, { error: 'demo server cannot schedule', code: 'demo' });
+        try {
+          return sendJson(res, 200, { ok: true, schedule: upsertSchedule(body) });
+        } catch (e) {
+          return sendJson(res, 400, { error: e.message });
+        }
+      }
+      if (adminWrite && route === '/api/admin/schedule/delete') return sendJson(res, 200, { ok: deleteSchedule(String(body.id || '')) });
+      if (adminWrite && route === '/api/admin/schedule/run') {
+        try {
+          return sendJson(res, 200, { ok: true, task: runSchedule(String(body.id || '')) });
+        } catch (e) {
+          return sendJson(res, 400, { error: e.message });
         }
       }
       if (adminWrite && route === '/api/admin/task/stop') {
@@ -189,6 +220,17 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
       }
       if (req.method !== 'GET') return send(res, 405, 'method not allowed', undefined, { Allow: 'GET' });
       if (route === '/api/admin/tasks') return sendJson(res, 200, { tasks: listTasks() });
+      if (route === '/api/admin/schedules') return sendJson(res, 200, { schedules: listSchedules() });
+      const qs = new URLSearchParams(q >= 0 ? raw.slice(q + 1) : '');
+      if (route === '/api/admin/procedures') return sendJson(res, 200, { procedures: listProcedures(String(qs.get('cwd') || '')) });
+      if (route === '/api/admin/procedure') {
+        const pr = readProcedure(String(qs.get('cwd') || ''), String(qs.get('slug') || ''));
+        return pr ? sendJson(res, 200, { procedure: pr }) : sendJson(res, 404, { error: 'not found' });
+      }
+      if (route === '/api/admin/procedure/image') {
+        const abs = imagePath(String(qs.get('cwd') || ''), String(qs.get('slug') || ''), String(qs.get('file') || ''));
+        return abs ? sendFile(req, res, abs) : send(res, 404, 'not found');
+      }
       if (route === '/api/admin/config') {
         // 관리자 화면이 읽는다: 지금 설정 + 지금 사무실에 있는 프로젝트(명부에 넣기 쉽게)
         let seen = [];
@@ -260,6 +302,7 @@ async function main() {
       `config.json 의 port 나 CLAUDE_OFFICE_PORT 로 바꾸세요 / change "port" in config.json or set CLAUDE_OFFICE_PORT.`);
     process.exit(1);
   });
+  if (!opts.demo) startScheduler();
   server.listen(port, '127.0.0.1', () => {
     try {
       fs.mkdirSync(officeHome(), { recursive: true });

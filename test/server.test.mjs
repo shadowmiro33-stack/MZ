@@ -275,3 +275,75 @@ test('업무 지시: claude -p 를 그 폴더에서 띄우고 stdin 으로 업�
   assert.equal((await req(port, '/api/admin/task/stop', { method: 'POST', headers: good, body: JSON.stringify({ id: task.id }) })).status, 404); // 이미 끝남
   delete process.env.CLAUDE_BIN;
 });
+
+test('업무 절차: 저장하면 .claude/procedures/<slug>.md·.json·그림이 생기고, 목록·읽기·그림·삭제', async () => {
+  const proj = path.join(tmp, 'proj2'); fs.mkdirSync(proj, { recursive: true });
+  const good = { 'Content-Type': 'application/json', 'X-Office-Admin': '1' };
+  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+  const r = await req(port, '/api/admin/procedure', { method: 'POST', headers: good, body: JSON.stringify({ cwd: `"${proj}"`, name: '매거진 수집/발행', memo: '아침마다', steps: [{ text: '수집기 실행', image: png }, { text: '발행 버튼' }] }) });
+  assert.equal(r.status, 200, r.body);
+  const { procedure } = JSON.parse(r.body);
+  assert.equal(procedure.slug, '매거진-수집발행');
+  const dir = path.join(proj, '.claude', 'procedures');
+  assert.ok(fs.existsSync(path.join(dir, '매거진-수집발행.md')));
+  assert.ok(fs.existsSync(path.join(dir, '매거진-수집발행', '01.png')));
+  const md = fs.readFileSync(path.join(dir, '매거진-수집발행.md'), 'utf8');
+  assert.match(md, /1\. 수집기 실행\n   !\[단계 1\]\(매거진-수집발행\/01\.png\)/);
+  assert.match(md, /2\. 발행 버튼/);
+  const list = JSON.parse((await req(port, '/api/admin/procedures?cwd=' + encodeURIComponent(proj))).body).procedures;
+  assert.equal(list.length, 1); assert.equal(list[0].steps, 2);
+  const one = JSON.parse((await req(port, `/api/admin/procedure?cwd=${encodeURIComponent(proj)}&slug=${encodeURIComponent('매거진-수집발행')}`)).body).procedure;
+  assert.equal(one.steps[0].image, '01.png');
+  const img = await req(port, `/api/admin/procedure/image?cwd=${encodeURIComponent(proj)}&slug=${encodeURIComponent('매거진-수집발행')}&file=01.png`);
+  assert.equal(img.status, 200); assert.equal(img.headers['content-type'], 'image/png');
+  // 순서 바꿔 다시 저장 — 그림 번호가 따라간다
+  const r2 = await req(port, '/api/admin/procedure', { method: 'POST', headers: good, body: JSON.stringify({ cwd: proj, slug: '매거진-수집발행', name: '매거진 수집/발행', steps: [{ text: '발행 버튼' }, { text: '수집기 실행', image: '01.png' }] }) });
+  assert.equal(JSON.parse(r2.body).procedure.steps[1].image, '02.png');
+  assert.ok(!fs.existsSync(path.join(dir, '매거진-수집발행', '01.png')));
+  // 업무에 절차 붙이기 (가짜 claude)
+  const fake = path.join(tmp, 'fake-claude.mjs');
+  if (fs.existsSync(fake)) {
+    process.env.CLAUDE_BIN = path.join(tmp, process.platform === 'win32' ? 'claude.cmd' : 'claude');
+    const t = await req(port, '/api/admin/task', { method: 'POST', headers: good, body: JSON.stringify({ cwd: proj, task: '오늘 기사만', procedure: '매거진-수집발행', mode: 'auto', continueSession: true }) });
+    assert.equal(t.status, 200, t.body);
+    const task = JSON.parse(t.body).task;
+    assert.match(task.task, /\.claude\/procedures\/매거진-수집발행\.md 절차서/);
+    assert.ok(task.continueSession);
+    delete process.env.CLAUDE_BIN;
+  }
+  assert.equal(JSON.parse((await req(port, '/api/admin/procedure/delete', { method: 'POST', headers: good, body: JSON.stringify({ cwd: proj, slug: '매거진-수집발행' }) })).body).ok, true);
+  assert.ok(!fs.existsSync(path.join(dir, '매거진-수집발행.md')));
+});
+
+test('반복 업무: 등록·다음 실행 시각·지금 실행·끄기·삭제', async () => {
+  const { nextRunOf, normalizeSchedule, tick } = await import('../server/schedules.mjs');
+  const proj = path.join(tmp, 'proj3'); fs.mkdirSync(proj, { recursive: true });
+  const good = { 'Content-Type': 'application/json', 'X-Office-Admin': '1' };
+  const now = new Date('2026-10-27T10:00:00').getTime();
+  const d = normalizeSchedule({ cwd: proj, task: 'x', every: 'daily', time: '07:00' });
+  assert.equal(new Date(nextRunOf(d, now)).getHours(), 7);
+  assert.ok(Date.parse(nextRunOf(d, now)) > now);
+  const h = normalizeSchedule({ cwd: proj, task: 'x', every: 'minutes', minutes: 1 });
+  assert.equal(h.minutes, 5);
+  assert.throws(() => normalizeSchedule({ cwd: proj }), /need a task/);
+  const r = await req(port, '/api/admin/schedule', { method: 'POST', headers: good, body: JSON.stringify({ cwd: proj, who: '별이', task: 'TODO 하나 진행', every: 'hourly', mode: 'auto' }) });
+  assert.equal(r.status, 200, r.body);
+  const s = JSON.parse(r.body).schedule;
+  assert.equal(s.every, 'hourly'); assert.ok(s.enabled); assert.ok(s.nextRun);
+  let list = JSON.parse((await req(port, '/api/admin/schedules')).body).schedules;
+  assert.equal(list.length, 1);
+  assert.deepEqual(tick(Date.now()), []); // 아직 때가 안 됨
+  if (fs.existsSync(path.join(tmp, 'fake-claude.mjs'))) {
+    process.env.CLAUDE_BIN = path.join(tmp, process.platform === 'win32' ? 'claude.cmd' : 'claude');
+    const run = await req(port, '/api/admin/schedule/run', { method: 'POST', headers: good, body: JSON.stringify({ id: s.id }) });
+    assert.equal(run.status, 200, run.body);
+    assert.equal(JSON.parse(run.body).task.schedule, s.id);
+    list = JSON.parse((await req(port, '/api/admin/schedules')).body).schedules;
+    assert.equal(list[0].runs, 1); assert.ok(list[0].lastRun);
+    delete process.env.CLAUDE_BIN;
+  }
+  const off = await req(port, '/api/admin/schedule', { method: 'POST', headers: good, body: JSON.stringify({ ...s, enabled: false }) });
+  assert.equal(JSON.parse(off.body).schedule.enabled, false);
+  assert.equal(JSON.parse((await req(port, '/api/admin/schedule/delete', { method: 'POST', headers: good, body: JSON.stringify({ id: s.id }) })).body).ok, true);
+  assert.equal(JSON.parse((await req(port, '/api/admin/schedules')).body).schedules.length, 0);
+});

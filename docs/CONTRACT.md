@@ -160,6 +160,12 @@ thinking·빈 글은 건너뛴다. 대화 기록 형식은 Claude Code 내부 �
   mode: acceptEdits(기본: `--permission-mode acceptEdits --permission-prompts none`) · auto · plan · bypass(`--dangerously-skip-permissions`).
   기록은 `~/.claude-office/tasks/<id>.json`, 출력은 `<id>.log`. 데모 서버는 400. claude 실행 파일은 `CLAUDE_BIN` > `~/.local/bin/claude` > PATH 의 `claude`.
 - `POST /api/admin/task/stop` `{ id }` → SIGTERM.
+- 업무 절차(server/procedures.mjs): `GET /api/admin/procedures?cwd=` 목록, `GET /api/admin/procedure?cwd=&slug=` 하나, `GET /api/admin/procedure/image?cwd=&slug=&file=NN.png` 그림,
+  `POST /api/admin/procedure` `{ cwd, slug?, name, memo, steps: [{ text, image: dataURL|기존파일명|'' }] }` → `<cwd>/.claude/procedures/<slug>.json`·`.md`·`<slug>/NN.png`,
+  `POST /api/admin/procedure/delete` `{ cwd, slug }`. 업무에 `procedure: slug` 를 붙이면 업무 글 앞에 "절차서를 읽고 그대로" 머리말이 붙는다.
+- 반복 업무(server/schedules.mjs, `~/.claude-office/schedules.json`): `GET /api/admin/schedules`, `POST /api/admin/schedule`(만들기·고치기, `{ id?, cwd, who, task, procedure, mode, every: daily|hourly|minutes|once, time, minutes, at, continueSession, enabled }`),
+  `POST /api/admin/schedule/delete`, `POST /api/admin/schedule/run`(지금 실행). 실제 서버가 30초마다 `tick()` 으로 때가 된 것을 startTask 한다. 데모 서버는 안 돈다.
+- `continueSession` 이면 `claude --continue -p …` — 같은 폴더의 지난 대화에 이어서.
 - 그 밖의 경로에 POST 는 여전히 405.
 - 데모 서버(`--demo`)도 명부를 입힌다 — 관리자 모드를 가짜 데이터로 시험해 볼 수 있다. 데모의 저장도 진짜 `config.json` 에 쓴다.
 

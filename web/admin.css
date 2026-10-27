@@ -131,3 +131,20 @@ textarea:focus { outline: 2px solid var(--sub); outline-offset: -1px; }
 .a-check-sm input { width: 14px; height: 14px; }
 .a-task.running { border-color: var(--work); }
 @media (max-width: 720px) { .a-tabs { order: 5; flex-basis: 100%; margin-left: 0; } }
+
+/* 절차 편집 */
+.a-row-inline { display: flex; gap: 6px; align-items: center; }
+.a-row-inline select { flex: 1; }
+.a-when-x { display: inline-flex; gap: 10px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+.a-when-x input[type=time], .a-when-x input[type=number] { min-height: 30px; width: 110px; }
+.a-steps { margin: 0; padding: 0 0 0 22px; display: flex; flex-direction: column; gap: 10px; }
+.a-step { display: grid; grid-template-columns: 1fr 180px auto; gap: 10px; align-items: start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #FFF; }
+.a-step textarea { width: 100%; min-height: 56px; font-size: 13px; }
+.a-shot { position: relative; min-height: 56px; border: 1px dashed var(--line); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--ink3); cursor: pointer; overflow: hidden; background: var(--soft); }
+.a-shot img { max-width: 100%; max-height: 120px; display: block; }
+.a-shot:focus-within, .a-shot:focus { outline: 2px solid var(--sub); }
+.a-step .ops { display: flex; flex-direction: column; gap: 4px; }
+.a-step .ops button { min-height: 26px; padding: 0 8px; font-size: 12px; }
+.a-sched .h .next { color: var(--ink3); font-size: 12px; }
+.a-sched.off { opacity: .6; }
+@media (max-width: 720px) { .a-step { grid-template-columns: 1fr; } }
