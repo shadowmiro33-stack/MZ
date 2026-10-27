@@ -11,6 +11,8 @@ import { createDemo } from './demo.mjs';
 import { decorate, homeOf, isHidden } from './staff.mjs';
 import { REPO_DIR, pathKey } from './paths.mjs';
 import { APP, health, openBrowser, removePidFile, urlOf } from './control.mjs';
+import { listTasks, startTask, stopTask } from './tasks.mjs';
+import { staffFor } from './staff.mjs';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -138,19 +140,43 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
       } catch {
         return send(res, 404, 'not found');
       }
-      // 관리자 저장 — 유일한 쓰기 경로. 같은 출처(브라우저 주소가 이 서버)에서 관리자 헤더를 붙인 JSON 만 받는다.
-      if (route === '/api/admin/config' && req.method === 'POST') {
+      // 관리자 쓰기(설정 저장·업무 지시·업무 중지) — 같은 출처(브라우저 주소가 이 서버)에서 관리자 헤더를 붙인 JSON 만 받는다.
+      const adminWrite = route.startsWith('/api/admin/') && req.method === 'POST';
+      let body = null;
+      if (adminWrite) {
         const origin = String(req.headers.origin || '').toLowerCase();
         const okOrigin = !origin || [`http://127.0.0.1:${port}`, `http://localhost:${port}`, `http://[::1]:${port}`].includes(origin);
         if (!okOrigin || req.headers[ADMIN_HEADER] !== '1' || !/^application\/json/i.test(String(req.headers['content-type'] || ''))) {
           return send(res, 403, 'forbidden');
         }
-        let body;
         try {
           body = JSON.parse(await readBody(req));
         } catch {
           return sendJson(res, 400, { error: 'bad json' });
         }
+      }
+      if (adminWrite && route === '/api/admin/task') {
+        // 업무 지시 — 명부의 직원(key) 또는 경로(cwd)로 폴더를 정하고 claude -p 를 그 폴더에서 띄운다
+        if (demo) return sendJson(res, 400, { error: 'demo server cannot run tasks' });
+        const cfg = loadConfig();
+        let cwd = typeof body.cwd === 'string' ? body.cwd.trim() : '';
+        const key = typeof body.key === 'string' ? body.key.trim() : '';
+        if (!cwd && key) {
+          const s = cfg.staff[key] || staffFor(cfg, key, pathKey(key));
+          cwd = (s && s.path) || (path.isAbsolute(key) ? key : '');
+        }
+        try {
+          const rec = startTask({ who: body.who || key, cwd, task: body.task, mode: body.mode, model: body.model });
+          return sendJson(res, 200, { ok: true, task: rec });
+        } catch (e) {
+          return sendJson(res, 400, { error: e.message });
+        }
+      }
+      if (adminWrite && route === '/api/admin/task/stop') {
+        const r = stopTask(String(body.id || ''));
+        return sendJson(res, r.ok ? 200 : 404, r);
+      }
+      if (adminWrite && route === '/api/admin/config') {
         try {
           const cfg = saveConfig(body);
           memo = { at: 0, promise: null }; // 다음 폴링이 새 설정으로 조립하게
@@ -161,6 +187,7 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
         }
       }
       if (req.method !== 'GET') return send(res, 405, 'method not allowed', undefined, { Allow: 'GET' });
+      if (route === '/api/admin/tasks') return sendJson(res, 200, { tasks: listTasks() });
       if (route === '/api/admin/config') {
         // 관리자 화면이 읽는다: 지금 설정 + 지금 사무실에 있는 프로젝트(명부에 넣기 쉽게)
         let seen = [];

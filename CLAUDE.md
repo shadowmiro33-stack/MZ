@@ -9,7 +9,7 @@
 |---|---|
 | "3D 사무실 적용해줘", "설치해줘", "install", "set it up", "apply 3D office", "Set up the 3D office" | 아래 **설치 절차** |
 | "3D 사무실 열어줘", "켜줘", "open the office", "start" | `node scripts/start.mjs --open` |
-| "관리자 모드 열어줘", "직원 명부", "이름/직책 바꿔줘", "open admin mode", "admin", "staff" | `node scripts/start.mjs --admin` — 브라우저의 관리자 모드(`/admin.html`)에서 직원 이름·직책·팀·캐릭터·자리·숨김·사무실 이름을 고친다. 직접 설정값을 받아 적어 달라고 하면 아래 **관리자 모드와 설정** 을 보고 `~/.claude-office/config.json` 을 고쳐도 된다 |
+| "관리자 모드 열어줘", "직원 명부", "이름/직책 바꿔줘", "업무 보내줘", "open admin mode", "admin", "staff" | `node scripts/start.mjs --admin` — 브라우저의 관리자 모드(`/admin.html`)에서 직원 이름·직책·팀·캐릭터·자리·숨김·사무실 이름을 고친다. 직접 설정값을 받아 적어 달라고 하면 아래 **관리자 모드와 설정** 을 보고 `~/.claude-office/config.json` 을 고쳐도 된다 |
 | "꺼줘", "서버 멈춰", "stop" | `node scripts/stop.mjs` |
 | "상태 봐줘", "안 보여", "doctor", "status" | `node scripts/status.mjs` 결과를 읽고 아래 **문제 해결** 참고 |
 | "데모 보여줘", "demo" | `node scripts/start.mjs --demo --open` (가짜 데이터, 실제 세션과 무관) |

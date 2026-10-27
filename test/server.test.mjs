@@ -242,3 +242,36 @@ test('실행: pid 파일, 같은 포트 두 번째는 "이미 떠 있음" 0, 남
     if (child.exitCode === null) child.kill('SIGKILL');
   }
 });
+
+test('업무 지시: claude -p 를 그 폴더에서 띄우고 stdin 으로 업무를 넘긴다, 목록·로그·중지', async () => {
+  // 가짜 claude — 인자와 stdin 을 받아 찍고 끝난다
+  const fake = path.join(tmp, 'fake-claude.mjs');
+  fs.writeFileSync(fake, `let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{console.log('ARGS',JSON.stringify(process.argv.slice(2)));console.log('CWD',process.cwd());console.log('TASK',s.trim());setTimeout(()=>process.exit(0),300)});`);
+  const bin = path.join(tmp, process.platform === 'win32' ? 'claude.cmd' : 'claude');
+  fs.writeFileSync(bin, process.platform === 'win32' ? `@echo off\r\n"${process.execPath}" "${fake}" %*\r\n` : `#!/bin/sh\nexec "${process.execPath}" "${fake}" "$@"\n`);
+  if (process.platform !== 'win32') fs.chmodSync(bin, 0o755);
+  process.env.CLAUDE_BIN = bin;
+  const proj = path.join(tmp, 'proj'); fs.mkdirSync(proj, { recursive: true });
+  const good = { 'Content-Type': 'application/json', 'X-Office-Admin': '1' };
+  const bad = await req(port, '/api/admin/task', { method: 'POST', headers: good, body: JSON.stringify({ cwd: path.join(tmp, 'nope'), task: 'x' }) });
+  assert.equal(bad.status, 400);
+  const r = await req(port, '/api/admin/task', { method: 'POST', headers: good, body: JSON.stringify({ cwd: proj, who: '몽실이', task: 'README 정리해줘', mode: 'acceptEdits' }) });
+  assert.equal(r.status, 200, r.body);
+  const { task } = JSON.parse(r.body);
+  assert.equal(task.cwd, proj);
+  assert.equal(task.mode, 'acceptEdits');
+  let list;
+  for (let i = 0; i < 40; i++) {
+    await new Promise((res) => setTimeout(res, 100));
+    list = JSON.parse((await req(port, '/api/admin/tasks')).body).tasks;
+    if (list[0] && list[0].status !== 'running') break;
+  }
+  assert.equal(list[0].id, task.id);
+  assert.equal(list[0].status, 'done', JSON.stringify(list[0]));
+  assert.match(list[0].log, /TASK README 정리해줘/);
+  assert.match(list[0].log, /--permission-mode","acceptEdits","--permission-prompts","none"/);
+  assert.ok(list[0].log.includes(`CWD ${fs.realpathSync(proj)}`) || list[0].log.includes(`CWD ${proj}`));
+  assert.equal(list[0].who, '몽실이');
+  assert.equal((await req(port, '/api/admin/task/stop', { method: 'POST', headers: good, body: JSON.stringify({ id: task.id }) })).status, 404); // 이미 끝남
+  delete process.env.CLAUDE_BIN;
+});

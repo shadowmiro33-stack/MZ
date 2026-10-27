@@ -64,13 +64,36 @@
     <div class="a-table-wrap">
       <table id="staff" class="a-table">
         <thead><tr>
-          <th data-t="col.key">폴더 / 경로</th><th data-t="col.name">표시 이름</th><th data-t="col.title">직책</th><th data-t="col.team">팀</th>
+          <th data-t="col.key">폴더</th><th data-t="col.path">경로</th><th data-t="col.name">표시 이름</th><th data-t="col.title">직책</th><th data-t="col.team">팀</th>
           <th data-t="col.kind">캐릭터</th><th data-t="col.home">자리</th><th data-t="col.color">색</th><th data-t="col.hidden">숨김</th><th></th>
         </tr></thead>
         <tbody></tbody>
       </table>
     </div>
     <button type="button" id="staff-add" class="a-btn small" data-t="staff.add">+ 직원 추가</button>
+  </section>
+
+  <!-- 4. 업무 지시 — 직원의 프로젝트 폴더에서 Claude Code(헤드리스)를 실행한다 -->
+  <section class="a-card" id="work-card">
+    <h2><span data-t="work">업무 지시</span> <small data-t="work.hint">직원의 프로젝트 폴더에서 Claude Code 가 실제로 일합니다. 사무실에서 그 캐릭터가 일하는 게 보입니다</small></h2>
+    <div class="a-grid">
+      <label><span data-t="work.who">직원</span><select id="w-who"></select><small id="w-path" class="a-mono"></small></label>
+      <label><span data-t="work.mode">권한</span>
+        <select id="w-mode">
+          <option value="acceptEdits" data-t="mode.acceptEdits">파일 수정 자동 승인 (명령 실행은 거절)</option>
+          <option value="auto" data-t="mode.auto">자동 모드 (안전한 명령은 알아서)</option>
+          <option value="plan" data-t="mode.plan">계획만 (파일 안 건드림)</option>
+          <option value="bypass" data-t="mode.bypass">전부 자동 승인 (위험)</option>
+        </select>
+      </label>
+      <label class="a-wide"><span data-t="work.task">업무 내용</span><textarea id="w-task" rows="4" placeholder="예: README 를 읽고 프로젝트 구조를 docs/STRUCTURE.md 에 정리해줘"></textarea></label>
+    </div>
+    <div class="a-actions">
+      <button type="button" id="w-send" class="a-btn primary" data-t="work.send">업무 보내기</button>
+      <span id="w-status" class="a-status"></span>
+    </div>
+    <h3 data-t="work.list">업무 목록</h3>
+    <ul id="w-tasks" class="a-tasks"></ul>
   </section>
 
   <section class="a-card a-json">

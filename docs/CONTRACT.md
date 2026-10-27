@@ -155,6 +155,11 @@ thinking·빈 글은 건너뛴다. 대화 기록 형식은 Claude Code 내부 �
   **서버의 유일한 쓰기 경로.** 받는 조건: Host 검사 통과 + 헤더 `X-Office-Admin: 1` + `Content-Type: application/json` +
   `Origin` 이 없거나 이 서버 자신(`http://127.0.0.1:포트` 등). 하나라도 어긋나면 403, JSON 이 깨지면 400.
   (`X-Office-Admin` 은 다른 사이트의 폼·단순 fetch 가 붙일 수 없는 사용자 정의 헤더라 CSRF 를 막고, CORS 헤더가 없어 사전 요청도 실패한다.)
+- `GET /api/admin/tasks` → `{ tasks: [{ id, who, cwd, task, mode, pid, startedAt, endedAt, exitCode, status, log }] }` — 최근 30개, log = 출력 꼬리 4KB.
+- `POST /api/admin/task` `{ key | cwd, who, task, mode }` → 그 폴더에서 `claude -p <고정 프롬프트> <권한 플래그>` 를 띄우고 업무 글은 stdin 으로 넘긴다(server/tasks.mjs).
+  mode: acceptEdits(기본: `--permission-mode acceptEdits --permission-prompts none`) · auto · plan · bypass(`--dangerously-skip-permissions`).
+  기록은 `~/.claude-office/tasks/<id>.json`, 출력은 `<id>.log`. 데모 서버는 400. claude 실행 파일은 `CLAUDE_BIN` > `~/.local/bin/claude` > PATH 의 `claude`.
+- `POST /api/admin/task/stop` `{ id }` → SIGTERM.
 - 그 밖의 경로에 POST 는 여전히 405.
 - 데모 서버(`--demo`)도 명부를 입힌다 — 관리자 모드를 가짜 데이터로 시험해 볼 수 있다. 데모의 저장도 진짜 `config.json` 에 쓴다.
 

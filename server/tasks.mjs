@@ -1,0 +1,140 @@
+// 업무 지시 — 관리자 모드가 보낸 업무를 그 직원(프로젝트 폴더)에서 Claude Code 헤드리스(claude -p)로 실행한다.
+// 업무 글은 stdin 으로 넘긴다(따옴표·줄바꿈 걱정 없이). 출력은 ~/.claude-office/tasks/<id>.log, 기록은 <id>.json.
+// 훅은 -p 세션에도 울리므로 사무실 화면에서 그 캐릭터가 일하는 것이 보인다.
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { IS_WIN, officeHome } from './paths.mjs';
+import { pidAlive } from './liveness.mjs';
+
+export const MODES = Object.freeze({
+  acceptEdits: ['--permission-mode', 'acceptEdits', '--permission-prompts', 'none'],   // 파일 수정은 자동, 그 밖은 거절
+  plan: ['--permission-mode', 'plan', '--permission-prompts', 'none'],                 // 계획만 세운다(파일 안 건드림)
+  auto: ['--permission-mode', 'auto', '--permission-prompts', 'none'],                 // 자동 모드 분류기가 판단
+  bypass: ['--dangerously-skip-permissions'],                                           // 전부 자동 승인(위험)
+});
+export const MAX_TASK = 20000;
+const KEEP = 100;                                                                        // 기록 보관 개수
+const TAIL = 4000;                                                                       // 목록에 실어 보내는 로그 꼬리
+
+export const tasksDir = () => path.join(officeHome(), 'tasks');
+const live = new Map(); // id → child
+
+/** claude 실행 파일 — PATH 의 claude, 없으면 네이티브 설치 위치 */
+export function claudeBin() {
+  if (process.env.CLAUDE_BIN) return process.env.CLAUDE_BIN;
+  const home = os.homedir();
+  const cands = IS_WIN
+    ? [path.join(home, '.local', 'bin', 'claude.exe'), path.join(home, 'AppData', 'Roaming', 'npm', 'claude.cmd')]
+    : [path.join(home, '.local', 'bin', 'claude'), '/opt/homebrew/bin/claude', '/usr/local/bin/claude'];
+  for (const c of cands) if (fs.existsSync(c)) return c;
+  return 'claude';
+}
+
+const PROMPT = '표준 입력(stdin)으로 받은 업무 지시를 이 폴더에서 수행하세요. 끝나면 무엇을 했는지 한국어로 짧게 정리하세요. '
+  + 'Carry out the task given on stdin in this directory, then summarize briefly in Korean what you did.';
+
+function idNow() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}-${Math.random().toString(36).slice(2, 6)}`;
+}
+const recFile = (id) => path.join(tasksDir(), `${id}.json`);
+const logFile = (id) => path.join(tasksDir(), `${id}.log`);
+function save(rec) {
+  fs.mkdirSync(tasksDir(), { recursive: true });
+  const tmp = `${recFile(rec.id)}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(rec, null, 2));
+  fs.renameSync(tmp, recFile(rec.id));
+}
+
+/** 업무 시작. who = 표시용(직원 이름), cwd = 프로젝트 폴더(있어야 함) */
+export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '' }) {
+  if (!cwd || !fs.existsSync(cwd) || !fs.statSync(cwd).isDirectory()) throw new Error('폴더가 없습니다 / folder not found: ' + cwd);
+  if (typeof task !== 'string' || !task.trim()) throw new Error('업무 내용이 비었습니다 / empty task');
+  if (!Object.hasOwn(MODES, mode)) throw new Error('모르는 권한 모드 / unknown mode: ' + mode);
+  const id = idNow();
+  fs.mkdirSync(tasksDir(), { recursive: true });
+  const out = fs.openSync(logFile(id), 'a');
+  const args = ['-p', PROMPT, ...MODES[mode], '--output-format', 'text'];
+  if (model && /^[a-z0-9.-]{2,40}$/i.test(model)) args.push('--model', model);
+  const bin = claudeBin();
+  const child = spawn(bin, args, {
+    cwd, windowsHide: true, stdio: ['pipe', out, out],
+    shell: IS_WIN && /\.cmd$|\.bat$/i.test(bin), env: { ...process.env, CLAUDE_OFFICE_TASK: id },
+  });
+  const rec = { id, who: String(who || path.basename(cwd)), cwd, task: task.slice(0, MAX_TASK), mode, model: model || '',
+    pid: child.pid, startedAt: new Date().toISOString(), endedAt: null, exitCode: null, error: null, bin };
+  save(rec);
+  live.set(id, child);
+  child.on('error', (e) => { rec.error = e.message; rec.endedAt = new Date().toISOString(); rec.exitCode = -1; save(rec); live.delete(id); try { fs.closeSync(out); } catch { /* 이미 닫힘 */ } });
+  child.on('exit', (code, sig) => { rec.endedAt = new Date().toISOString(); rec.exitCode = code ?? (sig ? -2 : -1); save(rec); live.delete(id); try { fs.closeSync(out); } catch { /* 이미 닫힘 */ } });
+  child.stdin.on('error', () => { /* 아이가 먼저 죽었다 */ });
+  child.stdin.end(task.slice(0, MAX_TASK) + '\n');
+  prune();
+  return rec;
+}
+
+export function stopTask(id) {
+  const child = live.get(id);
+  const rec = readRec(id);
+  if (!rec) return { ok: false, error: 'not found' };
+  if (child) {
+    try { child.kill('SIGTERM'); } catch { /* 이미 죽음 */ }
+    return { ok: true, id };
+  }
+  if (rec.pid && !rec.endedAt && pidAlive(rec.pid)) {                                   // 서버가 재시작된 뒤 남은 아이
+    try { process.kill(rec.pid, 'SIGTERM'); } catch { /* 무시 */ }
+    rec.endedAt = new Date().toISOString(); rec.exitCode = -2; save(rec);
+    return { ok: true, id };
+  }
+  return { ok: false, error: 'not running' };
+}
+
+function readRec(id) {
+  try {
+    return JSON.parse(fs.readFileSync(recFile(id), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+function tail(id) {
+  try {
+    const fd = fs.openSync(logFile(id), 'r');
+    const size = fs.fstatSync(fd).size;
+    const n = Math.min(size, TAIL);
+    const buf = Buffer.alloc(n);
+    fs.readSync(fd, buf, 0, n, size - n);
+    fs.closeSync(fd);
+    return (size > n ? '…' : '') + buf.toString('utf8');
+  } catch {
+    return '';
+  }
+}
+
+/** 업무 목록(최신 먼저) + 로그 꼬리. 서버가 재시작됐으면 살아 있는 pid 로 running 을 판단 */
+export function listTasks(limit = 30) {
+  let files = [];
+  try {
+    files = fs.readdirSync(tasksDir()).filter((f) => f.endsWith('.json') && !f.endsWith('.tmp')).sort().reverse().slice(0, limit);
+  } catch {
+    return [];
+  }
+  return files.map((f) => readRec(f.slice(0, -5))).filter(Boolean).map((rec) => {
+    const running = live.has(rec.id) || (!rec.endedAt && rec.pid && pidAlive(rec.pid));
+    return { ...rec, status: running ? 'running' : rec.error ? 'error' : rec.exitCode === 0 ? 'done' : rec.endedAt ? 'failed' : 'done', log: tail(rec.id) };
+  });
+}
+
+/** 오래된 기록 정리 — 최근 KEEP 개만 */
+function prune() {
+  try {
+    const files = fs.readdirSync(tasksDir()).filter((f) => f.endsWith('.json')).sort();
+    for (const f of files.slice(0, Math.max(0, files.length - KEEP))) {
+      const id = f.slice(0, -5);
+      if (live.has(id)) continue;
+      fs.rmSync(recFile(id), { force: true }); fs.rmSync(logFile(id), { force: true });
+    }
+  } catch { /* 정리는 실패해도 된다 */ }
+}

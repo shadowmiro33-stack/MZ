@@ -68,3 +68,24 @@ input[type="checkbox"] { width: 16px; height: 16px; }
   .a-row { grid-template-columns: 1fr auto auto auto; }
   .a-row .a-count { display: none; }
 }
+
+/* 업무 지시 */
+.a-grid .a-wide { grid-column: 1 / -1; }
+textarea { min-height: 80px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: inherit; color: var(--ink); background: #FFF; resize: vertical; }
+textarea:focus { outline: 2px solid var(--sub); outline-offset: -1px; }
+.a-mono { font-family: var(--mono); font-size: 11px; color: var(--ink3); word-break: break-all; }
+.a-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+#work-card h3 { margin: 16px 0 6px; font-size: 14px; }
+.a-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.a-task { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font-size: 13px; }
+.a-task .h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.a-task .h b { font-weight: 700; }
+.a-task .h time { color: var(--ink3); font-family: var(--mono); font-size: 12px; }
+.a-task .t { margin: 4px 0 0; color: var(--ink2); white-space: pre-wrap; }
+.a-task pre { margin: 6px 0 0; padding: 8px; background: #1E2622; color: #DDE5E0; border-radius: 6px; font-family: var(--mono); font-size: 12px; max-height: 260px; overflow: auto; white-space: pre-wrap; }
+.a-task .x { margin-left: auto; }
+.a-chip { padding: 0 7px; border-radius: 4px; font-size: 12px; background: #EEF1EF; color: #44504A; }
+.a-chip.running { background: var(--work-bg); color: var(--work); animation: o-pulse 1.6s ease-in-out infinite; }
+.a-chip.done { background: var(--sub-bg); color: var(--sub); }
+.a-chip.failed, .a-chip.error { background: var(--ask-bg); color: var(--ask); }
+.a-table td.path input { min-width: 180px; font-family: var(--mono); font-size: 12px; }

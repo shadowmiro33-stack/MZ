@@ -27,12 +27,20 @@
       "teams.name": "팀 이름", "teams.n": "{n}명", "teams.del": "삭제",
       staff: "직원 명부", "staff.hint": "프로젝트 폴더 하나 = 직원 한 명. 폴더 이름(또는 전체 경로)으로 찾습니다",
       "staff.seen": "지금 사무실에 있는 프로젝트:", "staff.add": "+ 직원 추가", "staff.empty": "명부가 비어 있습니다 — 폴더 이름이 그대로 명찰이 됩니다",
-      "col.key": "폴더 / 경로", "col.name": "표시 이름", "col.title": "직책", "col.team": "팀", "col.kind": "캐릭터",
+      "col.key": "폴더", "col.path": "경로", "col.name": "표시 이름", "col.title": "직책", "col.team": "팀", "col.kind": "캐릭터",
       "col.home": "자리", "col.color": "색", "col.hidden": "숨김",
       "kind.auto": "자동(팀 대표 → 몽실이·별이)", "kind.pomesable": "몽실이(갈색 포메)", "kind.pomebw": "별이(흰 포메)", "kind.pome": "포메(주황)", "kind.shiba": "시바", "kind.corgi": "웰시코기", "kind.maltese": "말티즈", "kind.poodle": "푸들", "teams.kind": "팀 캐릭터", "kind.team": "자동(몽실이·별이)", "kind.frog": "개구리", "kind.capy": "카피바라", "home.desk": "책상", "home.server": "서버실",
       "team.none": "(없음)", "color.team": "팀 색", "color.own": "직접", json: "저장될 설정(JSON) 미리보기",
       "ph.key": "폴더 이름 또는 C:\\경로", "ph.name": "폴더 이름 그대로", "ph.title": "예: 프론트엔드",
       dup: "같은 폴더가 두 번 있습니다", confirmLeave: "저장하지 않은 변경이 있습니다. 나갈까요?",
+      "ph.path": "C:\\work\\프로젝트 (업무 지시용, 비워도 됨)",
+      work: "업무 지시", "work.hint": "직원의 프로젝트 폴더에서 Claude Code 가 실제로 일합니다. 사무실에서 그 캐릭터가 일하는 게 보입니다",
+      "work.who": "직원", "work.mode": "권한", "work.task": "업무 내용", "work.send": "업무 보내기", "work.list": "업무 목록",
+      "work.none": "경로가 있는 직원이 없습니다 — 명부에서 경로를 적고 저장하세요", "work.sent": "보냈습니다 — 사무실에서 확인하세요",
+      "work.fail": "보내지 못했습니다", "work.empty": "아직 보낸 업무가 없습니다", "work.stop": "중지", "work.log": "출력 보기",
+      "work.demo": "데모 서버에서는 업무를 보낼 수 없습니다 — 실제 서버(4777)에서 하세요",
+      "mode.acceptEdits": "파일 수정 자동 승인 (명령 실행은 거절)", "mode.auto": "자동 모드 (안전한 명령은 알아서)", "mode.plan": "계획만 (파일 안 건드림)", "mode.bypass": "전부 자동 승인 (위험)",
+      "st.running": "일하는 중", "st.done": "완료", "st.failed": "실패", "st.error": "오류",
     },
     en: {
       back: "← Office", title: "Admin mode", demo: "Demo server", reset: "Revert", save: "Save", saving: "Saving…",
@@ -49,12 +57,20 @@
       "teams.name": "Team name", "teams.n": "{n}", "teams.del": "Delete",
       staff: "Staff", "staff.hint": "One project folder = one employee. Matched by folder name (or full path)",
       "staff.seen": "In the office right now:", "staff.add": "+ Add employee", "staff.empty": "Nobody listed yet — folder names are used as name tags",
-      "col.key": "Folder / path", "col.name": "Display name", "col.title": "Title", "col.team": "Team", "col.kind": "Character",
+      "col.key": "Folder", "col.path": "Path", "col.name": "Display name", "col.title": "Title", "col.team": "Team", "col.kind": "Character",
       "col.home": "Seat", "col.color": "Color", "col.hidden": "Hide",
       "kind.auto": "Auto (team → Mongsil/Byeol)", "kind.pomesable": "Mongsil (sable pom)", "kind.pomebw": "Byeol (white pom)", "kind.pome": "Pom (orange)", "kind.shiba": "Shiba", "kind.corgi": "Corgi", "kind.maltese": "Maltese", "kind.poodle": "Poodle", "teams.kind": "Team character", "kind.team": "Auto (Mongsil/Byeol)", "kind.frog": "Frog", "kind.capy": "Capybara", "home.desk": "Desk", "home.server": "Server room",
       "team.none": "(none)", "color.team": "Team", "color.own": "Custom", json: "Preview of the config that will be saved (JSON)",
       "ph.key": "folder name or full path", "ph.name": "same as folder", "ph.title": "e.g. Frontend",
       dup: "This folder appears twice", confirmLeave: "You have unsaved changes. Leave anyway?",
+      "ph.path": "/abs/path/to/project (for tasks, optional)",
+      work: "Assign work", "work.hint": "Claude Code really works in the employee's project folder; you'll see the character working in the office",
+      "work.who": "Employee", "work.mode": "Permissions", "work.task": "Task", "work.send": "Send task", "work.list": "Tasks",
+      "work.none": "No employee has a path — add paths in the staff list and save", "work.sent": "Sent — watch the office",
+      "work.fail": "Could not send", "work.empty": "No tasks yet", "work.stop": "Stop", "work.log": "Show output",
+      "work.demo": "The demo server cannot run tasks — use the real server (4777)",
+      "mode.acceptEdits": "Auto-approve file edits (commands denied)", "mode.auto": "Auto mode (safe commands allowed)", "mode.plan": "Plan only (no file changes)", "mode.bypass": "Approve everything (dangerous)",
+      "st.running": "Working", "st.done": "Done", "st.failed": "Failed", "st.error": "Error",
     },
   };
   const lang = () => (I18N.lang === "ko" ? "ko" : "en");
@@ -76,19 +92,19 @@
     S.teams = Object.entries(cfg.teams || {}).map(([name, v]) => ({ id: uid(), name, color: (v && v.color) || "", kind: (v && v.kind) || "" }));
     S.staff = Object.entries(cfg.staff || {}).map(([key, v]) => ({
       id: uid(), key, name: v.name || "", title: v.title || "", team: v.team || "", kind: v.kind || "auto",
-      home: v.home === "server" ? "server" : "desk", color: v.color || "", hidden: !!v.hidden,
+      home: v.home === "server" ? "server" : "desk", color: v.color || "", hidden: !!v.hidden, path: v.path || "",
     }));
     const find = key => S.staff.find(r => r.key === key);
     for (const [k, v] of Object.entries(cfg.homes || {})) {
       if (v !== "server") continue;
       const r = find(k);
       if (r) r.home = "server";
-      else S.staff.push({ id: uid(), key: k, name: "", title: "", team: "", kind: "auto", home: "server", color: "", hidden: false });
+      else S.staff.push({ id: uid(), key: k, name: "", title: "", team: "", kind: "auto", home: "server", color: "", hidden: false, path: "" });
     }
     for (const k of cfg.hide || []) {
       const r = find(k);
       if (r) r.hidden = true;
-      else S.staff.push({ id: uid(), key: k, name: "", title: "", team: "", kind: "auto", home: "desk", color: "", hidden: true });
+      else S.staff.push({ id: uid(), key: k, name: "", title: "", team: "", kind: "auto", home: "desk", color: "", hidden: true, path: "" });
     }
     $("f-title").value = cfg.title || "";
     $("f-lang").value = cfg.lang || "auto";
@@ -121,6 +137,7 @@
       if (r.home === "server") s.home = "server";
       if (r.color) s.color = r.color;
       if (r.hidden) s.hidden = true;
+      if (r.path.trim()) s.path = r.path.trim();
       staff[key] = s;
     }
     return {
@@ -172,12 +189,12 @@
       const b = el("button", null, p.folder); b.type = "button"; b.title = p.path || "";
       const key = p.folder;
       if (have.has(keyOf(key)) || (p.path && have.has(keyOf(p.path)))) b.classList.add("in");
-      else b.onclick = () => { addStaff({ key }); };
+      else b.onclick = () => { addStaff({ key, path: p.path || "" }); };
       list.append(b);
     }
   }
   function addStaff(init = {}) {
-    S.staff.push({ id: uid(), key: "", name: "", title: "", team: "", kind: "auto", home: "desk", color: "", hidden: false, ...init });
+    S.staff.push({ id: uid(), key: "", name: "", title: "", team: "", kind: "auto", home: "desk", color: "", hidden: false, path: "", ...init });
     markDirty(); renderStaff();
     const last = $("staff").querySelector("tbody tr:last-child");
     (last?.querySelector(init.key ? "td.name input" : "td.key input"))?.focus();
@@ -195,7 +212,7 @@
     const counts = new Map();
     for (const r of S.staff) if (r.key.trim()) counts.set(keyOf(r.key), (counts.get(keyOf(r.key)) || 0) + 1);
     if (!S.staff.length) {
-      const tr = el("tr"); const td = el("td", "a-empty", t("staff.empty")); td.colSpan = 9; tr.append(td); body.append(tr);
+      const tr = el("tr"); const td = el("td", "a-empty", t("staff.empty")); td.colSpan = 10; tr.append(td); body.append(tr);
     }
     for (const r of S.staff) {
       const tr = el("tr", (r.hidden ? "hidden-row" : "") + (counts.get(keyOf(r.key)) > 1 ? " dup" : ""));
@@ -206,7 +223,7 @@
         i.onblur = () => { if (cls === "key") renderStaff(); };
         td.append(i); return td;
       };
-      tr.append(text("key", "key", t("ph.key"), 512), text("name", "name", t("ph.name")), text("title", "title", t("ph.title")));
+      tr.append(text("key", "key", t("ph.key"), 512), text("path", "path", t("ph.path"), 512), text("name", "name", t("ph.name")), text("title", "title", t("ph.title")));
       const teamTd = el("td");
       teamTd.append(select([["", t("team.none")], ...S.teams.filter(x => x.name.trim()).map(x => [x.name, x.name])], r.team, v => { r.team = v; markDirty(); renderTeams(); renderStaff(); }));
       tr.append(teamTd);
@@ -247,9 +264,11 @@
       S.loaded = body.config;
       S.seen = Array.isArray(body.seen) ? body.seen : [];
       $("a-demo").hidden = !body.demo;
+      W.demo = !!body.demo;
       fromConfig(body.config);
       S.dirty = false;
       renderTeams(); renderStaff(); preview();
+      whoOptions(); loadTasks();
       status("");
     } catch {
       status(t("loadFail"), "err");
@@ -271,7 +290,7 @@
       S.loaded = body.config;
       fromConfig(body.config);               // 서버가 닫은 값(잘린 이름 등)으로 다시 그린다
       S.dirty = false;
-      renderTeams(); renderStaff(); preview();
+      renderTeams(); renderStaff(); preview(); whoOptions();
       status(t("saved") + (portChanged ? t("portNote") : ""), "ok");
     } catch (e) {
       status(`${t("saveFail")} — ${e.message}`, "err");
@@ -279,6 +298,77 @@
       S.saving = false; $("a-save").disabled = false;
     }
   }
+  // ---------- 업무 지시 ----------
+  const W = { tasks: [], open: new Set(), timer: 0, demo: false };
+  function whoOptions() {
+    const sel = $("w-who"), cur = sel.value;
+    sel.replaceChildren();
+    const rows = S.staff.filter(r => r.path.trim() && r.key.trim());
+    const extra = S.seen.filter(p => p.path && !rows.some(r => keyOf(r.key) === keyOf(p.folder) || r.path.trim() === p.path));
+    for (const r of rows) { const o = el("option", null, `${r.name.trim() || r.key} (${r.key})`); o.value = r.key; o.dataset.path = r.path.trim(); sel.append(o); }
+    for (const p of extra) { const o = el("option", null, `${p.name} (${p.folder})`); o.value = p.path; o.dataset.path = p.path; o.dataset.cwd = "1"; sel.append(o); }
+    if (!sel.options.length) { const o = el("option", null, t("work.none")); o.value = ""; sel.append(o); }
+    sel.value = [...sel.options].some(o => o.value === cur) ? cur : sel.options[0]?.value || "";
+    $("w-path").textContent = sel.selectedOptions[0]?.dataset.path || "";
+  }
+  $("w-who").onchange = () => { $("w-path").textContent = $("w-who").selectedOptions[0]?.dataset.path || ""; };
+  async function sendWork() {
+    const o = $("w-who").selectedOptions[0];
+    const task = $("w-task").value.trim();
+    if (!o || !o.value || !task) return;
+    if (W.demo) { wstatus(t("work.demo"), "err"); return; }
+    const payload = { task, mode: $("w-mode").value, who: o.textContent.replace(/ \(.*\)$/, "") };
+    if (o.dataset.cwd) payload.cwd = o.value; else { payload.key = o.value; payload.cwd = o.dataset.path; }
+    $("w-send").disabled = true;
+    try {
+      const res = await fetch("/api/admin/task", { method: "POST", cache: "no-store", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify(payload) });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body.ok) throw new Error(body.error || String(res.status));
+      $("w-task").value = "";
+      wstatus(t("work.sent"), "ok");
+      W.open.add(body.task.id);
+      await loadTasks();
+    } catch (e) {
+      wstatus(`${t("work.fail")} — ${e.message}`, "err");
+    } finally {
+      $("w-send").disabled = false;
+    }
+  }
+  function wstatus(msg, cls) { const s = $("w-status"); s.textContent = msg || ""; s.className = "a-status" + (cls ? " " + cls : ""); }
+  async function loadTasks() {
+    try {
+      const res = await fetch("/api/admin/tasks", { cache: "no-store" });
+      if (!res.ok) return;
+      W.tasks = (await res.json()).tasks || [];
+      renderTasks();
+    } catch { /* 다음 번에 */ }
+    clearTimeout(W.timer);
+    if (W.tasks.some(x => x.status === "running")) W.timer = setTimeout(loadTasks, 3000);
+  }
+  function renderTasks() {
+    const box = $("w-tasks");
+    box.replaceChildren();
+    if (!W.tasks.length) { box.append(el("li", "a-empty", t("work.empty"))); return; }
+    for (const x of W.tasks) {
+      const li = el("li", "a-task");
+      const h = el("div", "h");
+      h.append(el("span", `a-chip ${x.status}`, t("st." + x.status)), el("b", null, x.who), el("time", null, x.startedAt.replace("T", " ").slice(5, 16)));
+      const toggle = el("button", "a-btn", t("work.log")); toggle.type = "button";
+      toggle.onclick = () => { if (W.open.has(x.id)) W.open.delete(x.id); else W.open.add(x.id); renderTasks(); };
+      h.append(toggle);
+      if (x.status === "running") {
+        const stop = el("button", "a-btn danger x", t("work.stop")); stop.type = "button";
+        stop.onclick = async () => { await fetch("/api/admin/task/stop", { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify({ id: x.id }) }); loadTasks(); };
+        h.append(stop);
+      }
+      li.append(h, el("p", "t", x.task.length > 300 ? x.task.slice(0, 300) + "…" : x.task));
+      if (W.open.has(x.id)) li.append(el("pre", null, (x.error ? `[error] ${x.error}\n` : "") + (x.log || "") + (x.status === "running" ? "\n…" : "")));
+      box.append(li);
+    }
+  }
+  $("w-send").onclick = sendWork;
+  $("w-task").addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") sendWork(); });
+
   $("a-save").onclick = save;
   $("a-reset").onclick = () => { if (S.loaded) { fromConfig(S.loaded); S.dirty = false; renderTeams(); renderStaff(); preview(); status(""); } };
   for (const id of ["f-title", "f-lang", "f-layout", "f-kid", "f-port", "f-auto", "f-fallback", "f-stale"]) $(id).addEventListener("input", markDirty);

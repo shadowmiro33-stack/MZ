@@ -75,6 +75,8 @@ function normalizeStaff(raw, teams) {
     if (v.hidden === true) s.hidden = true;
     const c = color(v.color);
     if (c) s.color = c;
+    const p = text(v.path, 512);
+    if (p) s.path = p;                     // 업무 지시를 보낼 프로젝트 폴더(절대 경로)
     out[key] = s;
   }
   return out;
