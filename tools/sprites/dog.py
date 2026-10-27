@@ -14,10 +14,20 @@ GROUND = 276            # 발끝 y
 CX = 110
 
 # ---------- 품종 색 ----------
+# fur 털, fur2 귀·꼬리 진한 털, cream 얼굴 아래·가슴·발, ink 선, mask 머리 위 진한 무늬(없으면 None),
+# blaze 이마 흰 줄(없으면 None), tongue 기본 표정에 혀
 BREEDS = {
-    "pome": {  # 포메라니안 — 주황 솜뭉치, 크림 얼굴, 작은 세모 귀, 말린 꼬리
+    "pome": {  # 포메라니안(주황) — 주황 솜뭉치, 크림 얼굴, 작은 세모 귀, 말린 꼬리
         "fur": "#F2A54A", "fur2": "#E08F30", "cream": "#FBE6BF", "ink": "#3B2A1A",
-        "nose": "#2B1D14", "cheek": "#F4B8A0", "fluff": True, "ears": "tri", "tail": "curl",
+        "nose": "#2B1D14", "cheek": "#F4B8A0", "mask": None, "blaze": None, "tongue": False,
+    },
+    "pomesable": {  # 갈색 세이블 포메 — 연갈색 털, 얼굴·귀에 진한 마스크, 크림 가슴, 혀 쏙
+        "fur": "#C99A66", "fur2": "#6B4A2E", "cream": "#F6E6CF", "ink": "#3B2A1A",
+        "nose": "#1E1512", "cheek": "#E8B6A0", "mask": "#8C6239", "blaze": None, "tongue": True,
+    },
+    "pomebw": {  # 흑백 파티 포메 — 흰 털, 검은 귀·머리 무늬, 이마 흰 블레이즈
+        "fur": "#F7F4EF", "fur2": "#2A2A2E", "cream": "#FFFFFF", "ink": "#2E2A2A",
+        "nose": "#1E1512", "cheek": "#F2C4C4", "mask": "#2A2A2E", "blaze": "#F7F4EF", "tongue": False,
     },
 }
 
@@ -154,6 +164,10 @@ class Dog:
             self.path(f"M{fmt(ex - 7*side)},{fmt(ey + 13)} L{fmt(ex + 3*side)},{fmt(ey - 8)} L{fmt(ex + 10*side)},{fmt(ey + 12)} Z", c["cheek"], sw=0, stroke="none")
         # 솜뭉치 머리
         self.path(self.fluff_ring(x, y, r), c["fur"])
+        if c.get("mask"):                       # 머리 위·양 볼의 진한 무늬(마스크) — 얼굴 크림 부분보다 아래에
+            self.path(f"M{fmt(x - r*0.98)},{fmt(y + r*0.2)} Q{fmt(x - r*0.9)},{fmt(y - r*0.9)} {fmt(x)},{fmt(y - r*0.98)} Q{fmt(x + r*0.9)},{fmt(y - r*0.9)} {fmt(x + r*0.98)},{fmt(y + r*0.2)} Q{fmt(x + r*0.5)},{fmt(y + r*0.05)} {fmt(x)},{fmt(y + r*0.1)} Q{fmt(x - r*0.5)},{fmt(y + r*0.05)} {fmt(x - r*0.98)},{fmt(y + r*0.2)} Z", c["mask"], sw=0, stroke="none")
+            if c.get("blaze") and face != "back":   # 이마 흰 줄
+                self.path(f"M{fmt(x - 9)},{fmt(y - r*0.98)} L{fmt(x + 9)},{fmt(y - r*0.98)} L{fmt(x + 5)},{fmt(y + r*0.12)} L{fmt(x - 5)},{fmt(y + r*0.12)} Z", c["blaze"], sw=0, stroke="none")
         if face != "back":
             fx = x + (0 if face == "front" else (-14 if face == "left" else 14))
             # 얼굴 크림 부분
@@ -174,6 +188,8 @@ class Dog:
             self.ellipse(fx, ny, 7, 5.5, c["nose"], sw=0, stroke="none")
             if mouth == "smile":
                 self.path(f"M{fmt(fx - 9)},{fmt(ny + 7)} Q{fmt(fx - 2)},{fmt(ny + 15)} {fmt(fx)},{fmt(ny + 8)} Q{fmt(fx + 2)},{fmt(ny + 15)} {fmt(fx + 9)},{fmt(ny + 7)}", "none", sw=2.5)
+                if c.get("tongue"):             # 혀 쏙
+                    self.path(f"M{fmt(fx - 4)},{fmt(ny + 11)} Q{fmt(fx)},{fmt(ny + 22)} {fmt(fx + 4)},{fmt(ny + 11)} Z", "#F08A9B", sw=2)
             elif mouth == "open":
                 self.path(f"M{fmt(fx - 9)},{fmt(ny + 7)} Q{fmt(fx)},{fmt(ny + 24)} {fmt(fx + 9)},{fmt(ny + 7)} Z", "#8C3B3B", sw=2.5)
                 self.path(f"M{fmt(fx - 5)},{fmt(ny + 14)} Q{fmt(fx)},{fmt(ny + 22)} {fmt(fx + 5)},{fmt(ny + 14)} Z", "#F28B8B", sw=0, stroke="none")

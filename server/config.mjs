@@ -19,7 +19,7 @@ export const DEFAULTS = Object.freeze({
   lang: 'auto',
 });
 
-export const KINDS = Object.freeze(['auto', 'pome', 'frog', 'capy']); // web/office-world.js OFFICE_SPECIES 와 같게
+export const KINDS = Object.freeze(['auto', 'pomesable', 'pomebw', 'pome', 'frog', 'capy']); // web/office-world.js OFFICE_SPECIES 와 같게
 export const HOMES = Object.freeze(['server']);
 export const MAX_TITLE = 40;
 export const MAX_NAME = 24;
