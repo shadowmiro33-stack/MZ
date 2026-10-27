@@ -14,7 +14,7 @@ import { APP, health, openBrowser, removePidFile, urlOf } from './control.mjs';
 import { clearTasks, deleteTask, listTasks, startTask, stopTask } from './tasks.mjs';
 import { deleteProcedure, imagePath, listProcedures, procedurePrompt, readProcedure, saveProcedure } from './procedures.mjs';
 import { deleteSchedule, listSchedules, runSchedule, startScheduler, upsertSchedule } from './schedules.mjs';
-import { staffFor } from './staff.mjs';
+import { profilePrompt, staffFor } from './staff.mjs';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -172,7 +172,8 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
           const parts = [];
           if (typeof body.procedure === 'string' && body.procedure) parts.push(procedurePrompt(body.procedure));
           if (typeof body.task === 'string' && body.task.trim()) parts.push(body.task);
-          const rec = startTask({ who: body.who || key, cwd, task: parts.join('\n\n'), mode: body.mode, model: body.model, continueSession: !!body.continueSession });
+          const rec = startTask({ who: body.who || key, cwd, task: parts.join('\n\n'), mode: body.mode, model: body.model, continueSession: !!body.continueSession,
+            systemPrompt: profilePrompt(cfg, key || path.basename(cwd)) });
           return sendJson(res, 200, { ok: true, task: rec });
         } catch (e) {
           return sendJson(res, 400, { error: e.message, code: e.code || 'bad', parent: e.parent || '' });

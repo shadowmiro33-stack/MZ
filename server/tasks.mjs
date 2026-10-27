@@ -50,7 +50,7 @@ function save(rec) {
 }
 
 /** 업무 시작. who = 표시용(직원 이름), cwd = 프로젝트 폴더(있어야 함) */
-export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '', continueSession = false, schedule = '' }) {
+export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '', continueSession = false, schedule = '', systemPrompt = '' }) {
   cwd = String(cwd || '').trim().replace(/^["']+|["']+$/g, '');          // 탐색기에서 복사하면 따옴표가 붙는다
   if (!cwd || !fs.existsSync(cwd)) { const e = new Error('폴더가 없습니다 / folder not found: ' + cwd); e.code = 'noDir'; throw e; }
   if (!fs.statSync(cwd).isDirectory()) {                                   // 파일을 적었다 — 그 파일이 있는 폴더를 제안
@@ -63,13 +63,14 @@ export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '', co
   const out = fs.openSync(logFile(id), 'a');
   const args = ['-p', PROMPT, ...MODES[mode], '--output-format', 'text'];
   if (continueSession) args.unshift('--continue');                                      // 같은 폴더의 지난 대화에 이어서
+  if (systemPrompt) args.push('--append-system-prompt', systemPrompt.slice(0, 6000));   // 직원 프로필
   if (model && /^[a-z0-9.-]{2,40}$/i.test(model)) args.push('--model', model);
   const bin = claudeBin();
   const child = spawn(bin, args, {
     cwd, windowsHide: true, stdio: ['pipe', out, out],
     shell: IS_WIN && /\.cmd$|\.bat$/i.test(bin), env: { ...process.env, CLAUDE_OFFICE_TASK: id },
   });
-  const rec = { id, who: String(who || path.basename(cwd)), cwd, task: task.slice(0, MAX_TASK), mode, model: model || '', continueSession: !!continueSession, schedule: schedule || '',
+  const rec = { id, who: String(who || path.basename(cwd)), cwd, task: task.slice(0, MAX_TASK), mode, model: model || '', continueSession: !!continueSession, schedule: schedule || '', profile: !!systemPrompt,
     pid: child.pid, startedAt: new Date().toISOString(), endedAt: null, exitCode: null, error: null, bin };
   save(rec);
   live.set(id, child);

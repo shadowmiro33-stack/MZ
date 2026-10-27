@@ -363,3 +363,28 @@ test('업무 삭제·비우기: 끝난 것만 지우고 실행 중은 남긴다'
   assert.ok(fs.existsSync(path.join(dir, '20260101-000001-live.json'))); // 살아 있는 pid = 남긴다
   fs.rmSync(path.join(dir, '20260101-000001-live.json'), { force: true });
 });
+
+test('직원 프로필: role 이 시스템 프롬프트로 claude 에 붙는다', async () => {
+  const { profilePrompt } = await import('../server/staff.mjs');
+  const { normalizeConfig } = await import('../server/config.mjs');
+  const cfg = normalizeConfig({ title: 'RGA 오피스', teams: { 개발: {} }, staff: { app: { name: '개굴 대리', title: '프론트엔드', team: '개발', role: '- 항상 npm test\n- 세 줄 보고' } } });
+  const p = profilePrompt(cfg, 'app');
+  assert.match(p, /RGA 오피스의 팀원 "개굴 대리 · 프론트엔드 · 개발 팀"/);
+  assert.match(p, /항상 npm test/);
+  assert.match(p, /질문:/);
+  assert.equal(profilePrompt(cfg, 'nobody'), '');
+  if (fs.existsSync(path.join(tmp, 'fake-claude.mjs'))) {
+    process.env.CLAUDE_BIN = path.join(tmp, process.platform === 'win32' ? 'claude.cmd' : 'claude');
+    fs.writeFileSync(path.join(tmp, 'home', 'config.json'), JSON.stringify({ staff: { proj: { name: '개굴 대리', role: '항상 npm test' } } }));
+    const proj = path.join(tmp, 'proj'); fs.mkdirSync(proj, { recursive: true });
+    const good = { 'Content-Type': 'application/json', 'X-Office-Admin': '1' };
+    const r = await req(port, '/api/admin/task', { method: 'POST', headers: good, body: JSON.stringify({ cwd: proj, key: 'proj', task: 'x' }) });
+    const task = JSON.parse(r.body).task;
+    assert.ok(task.profile);
+    let log = '';
+    for (let i = 0; i < 40 && !/ARGS/.test(log); i++) { await new Promise((res) => setTimeout(res, 100)); try { log = fs.readFileSync(path.join(tmp, 'home', 'tasks', `${task.id}.log`), 'utf8'); } catch { /* 아직 */ } }
+    assert.match(log, /--append-system-prompt",".*개굴 대리.*항상 npm test/);
+    fs.rmSync(path.join(tmp, 'home', 'config.json'), { force: true });
+    delete process.env.CLAUDE_BIN;
+  }
+});

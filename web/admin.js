@@ -28,7 +28,9 @@
       staff: "직원 명부", "staff.hint": "프로젝트 폴더 하나 = 직원 한 명. 폴더 이름(또는 전체 경로)으로 찾습니다",
       "staff.seen": "지금 사무실에 있는 프로젝트:", "staff.add": "+ 직원 추가", "staff.empty": "명부가 비어 있습니다 — 폴더 이름이 그대로 명찰이 됩니다",
       "col.key": "폴더", "col.path": "경로", "col.name": "표시 이름", "col.title": "직책", "col.team": "팀", "col.kind": "캐릭터",
-      "col.home": "자리", "col.color": "색", "col.hidden": "숨김",
+      "col.home": "자리", "col.color": "색", "col.hidden": "숨김", "col.role": "프로필",
+      "role.edit": "프로필", "role.has": "프로필 ✓", "role.title": "{n} 의 프로필 — 담당 업무·규칙·말투. 업무마다 Claude 에게 \"너는 이런 사람\"으로 전달됩니다",
+      "role.ph": "예:\n- 매거진 사이트(oasis-magazine) 프론트엔드 담당\n- 코드를 고치면 항상 npm test 를 돌린다\n- 보고는 세 줄 이내, 존댓말\n- 디자인 변경은 먼저 질문한다",
       "kind.auto": "자동(팀 대표 → 몽실이·별이)", "kind.pomesable": "몽실이(갈색 포메)", "kind.pomebw": "별이(흰 포메)", "kind.pome": "포메(주황)", "kind.shiba": "시바", "kind.corgi": "웰시코기", "kind.maltese": "말티즈", "kind.poodle": "푸들", "teams.kind": "팀 캐릭터", "kind.team": "자동(몽실이·별이)", "kind.frog": "개구리", "kind.capy": "카피바라", "home.desk": "책상", "home.server": "서버실",
       "team.none": "(없음)", "color.team": "팀 색", "color.own": "직접", json: "저장될 설정(JSON) 미리보기",
       "ph.key": "폴더 이름 또는 C:\\경로", "ph.name": "폴더 이름 그대로", "ph.title": "예: 프론트엔드",
@@ -80,7 +82,9 @@
       staff: "Staff", "staff.hint": "One project folder = one employee. Matched by folder name (or full path)",
       "staff.seen": "In the office right now:", "staff.add": "+ Add employee", "staff.empty": "Nobody listed yet — folder names are used as name tags",
       "col.key": "Folder", "col.path": "Path", "col.name": "Display name", "col.title": "Title", "col.team": "Team", "col.kind": "Character",
-      "col.home": "Seat", "col.color": "Color", "col.hidden": "Hide",
+      "col.home": "Seat", "col.color": "Color", "col.hidden": "Hide", "col.role": "Profile",
+      "role.edit": "Profile", "role.has": "Profile ✓", "role.title": "Profile of {n} — duties, rules, tone. Sent to Claude with every task as \"who you are\"",
+      "role.ph": "e.g.\n- Frontend owner of the magazine site\n- Always run npm test after changes\n- Report in 3 lines max\n- Ask before design changes",
       "kind.auto": "Auto (team → Mongsil/Byeol)", "kind.pomesable": "Mongsil (sable pom)", "kind.pomebw": "Byeol (white pom)", "kind.pome": "Pom (orange)", "kind.shiba": "Shiba", "kind.corgi": "Corgi", "kind.maltese": "Maltese", "kind.poodle": "Poodle", "teams.kind": "Team character", "kind.team": "Auto (Mongsil/Byeol)", "kind.frog": "Frog", "kind.capy": "Capybara", "home.desk": "Desk", "home.server": "Server room",
       "team.none": "(none)", "color.team": "Team", "color.own": "Custom", json: "Preview of the config that will be saved (JSON)",
       "ph.key": "folder name or full path", "ph.name": "same as folder", "ph.title": "e.g. Frontend",
@@ -136,7 +140,7 @@
     S.teams = Object.entries(cfg.teams || {}).map(([name, v]) => ({ id: uid(), name, color: (v && v.color) || "", kind: (v && v.kind) || "" }));
     S.staff = Object.entries(cfg.staff || {}).map(([key, v]) => ({
       id: uid(), key, name: v.name || "", title: v.title || "", team: v.team || "", kind: v.kind || "auto",
-      home: v.home === "server" ? "server" : "desk", color: v.color || "", hidden: !!v.hidden, path: v.path || "",
+      home: v.home === "server" ? "server" : "desk", color: v.color || "", hidden: !!v.hidden, path: v.path || "", role: v.role || "",
     }));
     const find = key => S.staff.find(r => r.key === key);
     for (const [k, v] of Object.entries(cfg.homes || {})) {
@@ -182,6 +186,7 @@
       if (r.color) s.color = r.color;
       if (r.hidden) s.hidden = true;
       if (r.path.trim()) s.path = r.path.trim();
+      if ((r.role || "").trim()) s.role = r.role.trim();
       staff[key] = s;
     }
     return {
@@ -256,7 +261,7 @@
     const counts = new Map();
     for (const r of S.staff) if (r.key.trim()) counts.set(keyOf(r.key), (counts.get(keyOf(r.key)) || 0) + 1);
     if (!S.staff.length) {
-      const tr = el("tr"); const td = el("td", "a-empty", t("staff.empty")); td.colSpan = 8; tr.append(td); body.append(tr);
+      const tr = el("tr"); const td = el("td", "a-empty", t("staff.empty")); td.colSpan = 9; tr.append(td); body.append(tr);
     }
     for (const r of S.staff) {
       const tr = el("tr", (r.hidden ? "hidden-row" : "") + (counts.get(keyOf(r.key)) > 1 ? " dup" : ""));
@@ -275,6 +280,20 @@
       kindTd.append(select(KINDS.map(k => [k, t("kind." + k)]), r.kind, v => { r.kind = v; markDirty(); }));
       tr.append(kindTd);
       tr.append(text("path", "path", t("ph.path"), 512));
+      const roleTd = el("td", "c");
+      const rb = el("button", "a-btn" + (r.role ? " has" : ""), r.role ? t("role.has") : t("role.edit")); rb.type = "button";
+      rb.onclick = () => {
+        const dlg = el("dialog", "a-dialog");
+        const h = el("h3", null, t("role.title", { n: r.name.trim() || r.key }));
+        const ta = el("textarea"); ta.rows = 8; ta.placeholder = t("role.ph"); ta.value = r.role || "";
+        const ok = el("button", "a-btn primary", t("save")); ok.type = "button";
+        const cancel = el("button", "a-btn", "✕"); cancel.type = "button";
+        ok.onclick = () => { r.role = ta.value; markDirty(); dlg.close(); renderStaff(); };
+        cancel.onclick = () => dlg.close();
+        const acts = el("div", "a-actions"); acts.append(ok, cancel);
+        dlg.append(h, ta, acts); document.body.append(dlg); dlg.addEventListener("close", () => dlg.remove()); dlg.showModal(); ta.focus();
+      };
+      roleTd.append(rb); tr.append(roleTd);
       // 더: 자리·색·숨김 — 한 칸에 작게
       const moreTd = el("td", "more");
       moreTd.append(select([["desk", t("home.desk")], ["server", t("home.server")]], r.home, v => { r.home = v; markDirty(); }));
