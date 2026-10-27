@@ -40,7 +40,8 @@
   }
   const SHEETS = OFFICE_SPECIES.flatMap(s => [s, s + "2", s + "3", s + "mini", s + "walk", s + "phone"]);
   const TINT = 0.6;              // 색칠한 칸 축척 — 쓰는 자세만 그때그때 칠해 메모리를 아낀다
-  const STAND = 96;              // 보통 캐릭터 키(사무실 그림 픽셀)
+  const STAND_BY = { image: 82, generated: 96 };   // 보통 캐릭터 키(사무실 픽셀) — 그림 사무실은 가구가 작아 조금 작게
+  let STAND = STAND_BY.image;
   const KID = 0.7;               // 커밋이 적은 저장소 = 꼬마(70%)
   const MINI = 0.5;              // 서브에이전트 = 주인 키의 50%
   const FRAME_MS = 1000 / 30, POLL_MS = 3000;
@@ -51,7 +52,7 @@
   const L = OfficeLife.L;
   const t = (k, v) => I18N.t(k, v);
   const $ = id => document.getElementById(id);
-  const st = { imgs: null, loaded: false, failImg: false, failNet: false, cells: new Map(), raf: 0, last: 0,
+  const st = { layout: "image", imgs: null, loaded: false, failImg: false, failNet: false, cells: new Map(), raf: 0, last: 0,
                people: null, meta: null, sel: null, view: { s: 1, ox: 0, oy: 0, dpr: 1, small: false }, parts: [] };
   const rnd = (a, b) => a + Math.random() * (b - a);
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
@@ -60,7 +61,7 @@
   function loadImages() {
     if (st.imgs) return;
     st.imgs = {};
-    const names = SHEETS.flatMap(s => [s, s + "-key"]);      // 바닥·가구·의자는 코드로 그린다(office-draw.js)
+    const names = ["floor", "chairs", ...SHEETS.flatMap(s => [s, s + "-key"])];   // 그림 사무실 바닥·의자 + 캐릭터 시트
     let left = names.length;
     for (const n of names) {
       const img = new Image();
@@ -346,9 +347,14 @@
     if (!st.loaded) return;
     ctx.setTransform(v.s * v.dpr, 0, 0, v.s * v.dpr, v.ox * v.dpr, v.oy * v.dpr);
     ctx.imageSmoothingQuality = "high";
-    OfficeDraw.floor(ctx);
-    OfficeDraw.walls(ctx);
-    for (const f of OFFICE_FURNITURE) if (f.kind !== "plant") OfficeDraw.furniture(ctx, f);   // 책상·소파 = 사람 뒤
+    if (st.layout === "generated") {                       // 코드로 그리는 사무실
+      OfficeDraw.floor(ctx);
+      OfficeDraw.walls(ctx);
+      for (const f of OFFICE_FURNITURE) if (f.kind !== "plant") OfficeDraw.furniture(ctx, f);   // 책상·소파 = 사람 뒤
+    } else {                                                 // 그림 사무실 — 바닥 그림 + 방 명판
+      ctx.drawImage(st.imgs.floor, 0, 0, OFFICE_W, OFFICE_H);
+      OfficeDraw.labels(ctx);
+    }
     drawRing(ctx, false);
     // 깊이 순서(발끝 y)대로 — 책상·회의실 의자 등받이도 끼워 넣는다: 앉은 사람(발끝 = 등받이 아래끝 - 2)보다 나중,
     // 의자 앞 통로를 지나는 사람보다 먼저. 그래서 앉은 사람은 허리 아래가 등받이에 가려진다. 화분도 깊이 순으로.
@@ -382,7 +388,11 @@
     if (chairsV !== OFFICE_VERSION) { chairsV = OFFICE_VERSION; CHAIRS = (A.chairs || []).map(c => ({ chair: c, y: c.seat[1] + OfficeLife.SIT_DESK + 1 })); }
     return CHAIRS;
   }
-  const drawChair = (ctx, c) => OfficeDraw.chair(ctx, c.chair);
+  function drawChair(ctx, c) {
+    if (st.layout === "generated") return OfficeDraw.chair(ctx, c.chair);
+    const [x, y, w, h] = c.chair.box;                        // 그림 사무실 — 바닥 그림에서 오린 의자 등받이
+    ctx.drawImage(st.imgs.chairs, x, y, w, h, x, y, w, h);
+  }
   const drawPlant = (ctx, e) => OfficeDraw.furniture(ctx, e.plant);
   function particles() {
     const t = L.t;
@@ -448,10 +458,13 @@
   let worldKey = null;
   function buildWorld(cfg) {
     const teams = OfficeWorld.teamsFromConfig(cfg);
-    const k = OfficeWorld.key(teams);
+    const mode = cfg?.layout === "generated" ? "generated" : "image";
+    const k = OfficeWorld.key(teams, mode);
     if (k === worldKey) return false;
     worldKey = k;
-    OfficeWorld.build(teams);
+    st.layout = mode;
+    STAND = STAND_BY[mode];
+    OfficeWorld.buildFor(teams, mode);
     OfficeLife.reset();
     st.sel = null;
     layout();

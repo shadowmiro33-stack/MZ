@@ -17,8 +17,10 @@ export const DEFAULTS = Object.freeze({
   staleHours: 6,
   kidCommits: 50,
   lang: 'auto',
+  layout: 'image',
 });
 
+export const LAYOUTS = Object.freeze(['image', 'generated']); // image = 그림 위 고정 방 4개, generated = 팀 수대로 방 생성
 export const KINDS = Object.freeze(['auto', 'pomesable', 'pomebw', 'pome', 'shiba', 'corgi', 'maltese', 'poodle', 'frog', 'capy']); // web/office-world.js OFFICE_SPECIES 와 같게
 export const HOMES = Object.freeze(['server']);
 export const MAX_TITLE = 40;
@@ -98,6 +100,7 @@ export function normalizeConfig(raw) {
     staleHours: num(c.staleHours, 0.05, 24 * 30, DEFAULTS.staleHours),
     kidCommits: num(c.kidCommits, 0, 1e9, DEFAULTS.kidCommits),
     lang: ['auto', 'ko', 'en'].includes(c.lang) ? c.lang : 'auto',
+    layout: LAYOUTS.includes(c.layout) ? c.layout : 'image',
   };
 }
 

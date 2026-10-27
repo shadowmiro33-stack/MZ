@@ -137,7 +137,7 @@ function officeMotion(L, SIT_DESK) {
   // 아이소 바닥이라 가로로 넓고 세로로 얇은 타원. 앉은 사람·일하는 사람·승인 대기는 자리에 박혀 있어야
   // 가구와 맞으므로 고정(밀리지 않는다), 서 있는 사람은 조금, 걷는 사람·서브에이전트는 많이 밀린다. 걷는
   // 사람이 고정된 사람에 막히면 정면으로 밀려 멈추지 않게 진행 방향의 옆으로 비켜 돌아간다.
-  const STAND_PX = 96;
+  const STAND_PX = 88;
   function sizeOf(e) {
     if (e.owner) return STAND_PX * 0.5 * (L.people.get(e.owner)?.kid ? 0.7 : 1);
     return STAND_PX * (e.kid ? 0.7 : 1);

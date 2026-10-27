@@ -18,6 +18,7 @@
       loadFail: "설정을 읽지 못했습니다 — 서버가 켜져 있나요?", saveFail: "저장하지 못했습니다", portNote: " · 포트를 바꿨으니 서버를 다시 켜 주세요",
       lead: "여기서 고친 내용은 설정 파일(~/.claude-office/config.json)에 저장되고, 사무실 화면에 3초 안에 반영됩니다. 터미널은 필요 없습니다.",
       office: "사무실", "office.title": "사무실 이름", "office.lang": "언어", "lang.auto": "자동",
+      "office.layout": "사무실 지도", "layout.image": "그림 사무실 (팀 방 4개, 사진풍)", "layout.generated": "자동 생성 (팀 수대로 방, 일러스트풍)",
       "office.kid": "꼬마 기준 커밋 수", "office.kid.hint": "이보다 커밋이 적은 저장소는 꼬마 직원",
       "office.port": "포트", "office.port.hint": "바꾸면 서버를 다시 켜야 합니다",
       "office.auto": "Claude 세션이 시작될 때 서버가 꺼져 있으면 자동으로 켜기", "office.adv": "고급",
@@ -39,6 +40,7 @@
       loadFail: "Couldn't load settings — is the server running?", saveFail: "Couldn't save", portNote: " · you changed the port: restart the server",
       lead: "Changes here are written to ~/.claude-office/config.json and the office picks them up within 3 seconds. No terminal needed.",
       office: "Office", "office.title": "Office name", "office.lang": "Language", "lang.auto": "Auto",
+      "office.layout": "Office map", "layout.image": "Picture office (4 team rooms, photo style)", "layout.generated": "Generated (a room per team, illustration style)",
       "office.kid": "Junior threshold (commits)", "office.kid.hint": "Repos with fewer commits appear as juniors",
       "office.port": "Port", "office.port.hint": "Changing it requires a server restart",
       "office.auto": "Start the server automatically when a Claude session starts", "office.adv": "Advanced",
@@ -90,6 +92,7 @@
     }
     $("f-title").value = cfg.title || "";
     $("f-lang").value = cfg.lang || "auto";
+    $("f-layout").value = cfg.layout === "generated" ? "generated" : "image";
     $("f-kid").value = cfg.kidCommits;
     $("f-port").value = cfg.port;
     $("f-auto").checked = cfg.autoStart !== false;
@@ -130,6 +133,7 @@
       staleHours: num($("f-stale").value, S.cfg.staleHours),
       kidCommits: Math.round(num($("f-kid").value, S.cfg.kidCommits)),
       lang: $("f-lang").value,
+      layout: $("f-layout").value,
     };
   }
   function preview() { $("preview").textContent = JSON.stringify(toConfig(), null, 2); }
@@ -277,7 +281,7 @@
   }
   $("a-save").onclick = save;
   $("a-reset").onclick = () => { if (S.loaded) { fromConfig(S.loaded); S.dirty = false; renderTeams(); renderStaff(); preview(); status(""); } };
-  for (const id of ["f-title", "f-lang", "f-kid", "f-port", "f-auto", "f-fallback", "f-stale"]) $(id).addEventListener("input", markDirty);
+  for (const id of ["f-title", "f-lang", "f-layout", "f-kid", "f-port", "f-auto", "f-fallback", "f-stale"]) $(id).addEventListener("input", markDirty);
   window.addEventListener("beforeunload", e => { if (S.dirty) { e.preventDefault(); e.returnValue = ""; } });
   document.addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); save(); } });
 

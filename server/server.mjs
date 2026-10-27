@@ -182,7 +182,7 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
       }
       if (route === '/api/config') {
         const c = loadConfig();
-        return sendJson(res, 200, { lang: c.lang, title: c.title, teams: c.teams, version: VERSION });
+        return sendJson(res, 200, { lang: c.lang, title: c.title, teams: c.teams, layout: c.layout, version: VERSION });
       }
       if (route === '/api/health') return sendJson(res, 200, { ok: true, app: APP, version: VERSION, demo, pid: process.pid, repo: REPO_DIR });
       const abs = files.get(route === '/' ? '/index.html' : route);

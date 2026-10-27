@@ -73,13 +73,16 @@ const OfficeDraw = (() => {
         ctx.fillStyle = "rgba(120, 130, 140, .5)"; poly(ctx, [a, b, up(b, 6), up(a, 6)]); ctx.fill();
       }
     }
-    // 방 명판 — 복도 쪽 벽 위
+    labels(ctx);
+  }
+  // 방 명판 — 복도 쪽 벽 위(코드 사무실) / 그림 사무실은 방 앞 유리벽 위에 반투명 띠
+  function labels(ctx) {
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     for (const lb of OFFICE_LABELS) {
       const text = lb.common ? I18N.t("room.common") : lb.text;
       ctx.font = `700 20px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif`;
       const w = ctx.measureText(text).width + 30, h = 30;
-      const x = lb.at[0], y = lb.at[1] - (lb.side < 0 ? 30 : WALL_H * 0.78) - 16;   // 아래쪽 방은 낮은 앞벽 위
+      const x = lb.at[0], y = lb.at[1] - (OFFICE_FURNITURE.length ? (lb.side < 0 ? 30 : WALL_H * 0.78) + 16 : 46);
       ctx.fillStyle = lb.common ? "#9AA5B1" : lb.color; ctx.beginPath(); ctx.roundRect(x - w / 2, y - h / 2, w, h, 6); ctx.fill();
       ctx.fillStyle = "#FFFFFF"; ctx.fillText(text, x, y + 1);
     }
@@ -161,5 +164,5 @@ const OfficeDraw = (() => {
     ctx.fillStyle = "#2F343A"; ctx.fillRect(sx - 28, y - 8, 8, 10); ctx.fillRect(sx + 20, y - 8, 8, 10); // 팔걸이
   }
 
-  return { floor, walls, furniture, chair, box, shade };
+  return { floor, walls, labels, furniture, chair, box, shade };
 })();

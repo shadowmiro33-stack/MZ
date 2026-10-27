@@ -212,13 +212,138 @@ const OfficeWorld = (() => {
     return Array.from({ length: 8 }, (_, i) => iso(cu + r * Math.cos(i * Math.PI / 4), cv + r * Math.sin(i * Math.PI / 4)));
   }
 
+  // ======================================================================================
+  // 그림 사무실(기본) — web/office/floor.webp(1536×1024, 팀 방 4개·복도·탕비실·라운지·회의실·서버실) 위에 손으로 잰 좌표.
+  // 팀은 순서대로 방 1~4 를 받고, 남는 방은 공용(팀 없는 사람). 팀이 5개 넘으면 뒤 팀은 빈 책상 아무 데나.
+  // 그림을 바꾸면 여기 좌표를 다시 잰다(주소 뒤 ?debug 로 점·선을 보며).
+  // ======================================================================================
+  const IMG_W = 1536, IMG_H = 1024, IMG_ROOMS = 4;
+  function buildImage(teams) {
+    OFFICE_VERSION++;
+    OFFICE_W = IMG_W; OFFICE_H = IMG_H;
+    SIZE = { U: 0, V: 0 };
+    const N = {}, E = [], W = [], B = [], D = [], OF = [], R = [], LB = [], CH = [], CHATS = [];
+    const S = { sofa: [], coffee: [], cafe: [], meeting: [], board: [], server: [], stroll: [], armchair: [] };
+    const addNode = (k, x, y) => { N[k] = [x, y]; return k; };
+    const link = (a, b) => E.push([a, b]);
+    const wall = (x0, y0, x1, y1) => W.push([[x0, y0], [x1, y1]]);
+    const chairAt = (x, y) => { CH.push({ box: [x - 22, y - 22, 44, 38], seat: [x, y], kid: 10 }); return { seat: [x, y], idx: CH.length - 1 }; };
+    const ringAt = (cx, cy, rx, ry) => Array.from({ length: 8 }, (_, i) => [cx + rx * Math.cos(i * Math.PI / 4), cy + ry * Math.sin(i * Math.PI / 4)]);
+
+    // 바닥(건물 + 현관) — 출입문은 왼쪽 아래 구석
+    OFFICE_FLOOR = [[108, 112], [1408, 106], [1496, 796], [150, 798], [120, 870], [30, 870], [42, 796]];
+    wall(108, 112, 1408, 106); wall(1408, 106, 1496, 796); wall(150, 798, 1496, 796); wall(108, 112, 62, 690);   // 바깥벽(왼쪽 아래 = 출입문)
+
+    // 복도(y≈428)·왼쪽 세로 통로(x≈130)·출입문
+    const HY = 428;
+    addNode("out", 70, 850); addNode("door", 118, 772); addNode("inner", 132, 690);
+    link("out", "door"); link("door", "inner");
+    addNode("L1", 132, 560); addNode("L0", 136, HY);
+    link("inner", "L1"); link("L1", "L0");
+    const hall = ["L0"];
+    for (let x = 290; x < 1440; x += 150) hall.push(addNode(`h${x}`, x, HY));
+    for (let i = 1; i < hall.length; i++) link(hall[i - 1], hall[i]);
+    const hallAt = x => hall.reduce((a, b) => (Math.abs(N[b][0] - x) < Math.abs(N[a][0] - x) ? b : a));
+    for (const x of [260, 620, 980, 1340]) S.stroll.push({ at: [x, HY + 14], via: hallAt(x) });
+    S.stroll.push({ at: [132, 620], via: "L1" });
+    CHATS.push({ pts: [[700, HY + 10], [760, HY + 10]], via: hallAt(730) });
+    CHATS.push({ pts: [[1180, HY + 10], [1240, HY + 10]], via: hallAt(1210) });
+
+    // ---------- 팀 방 4개(위) ----------
+    const list = teams.slice(0, IMG_ROOMS).map(t => ({ ...t }));
+    while (list.length < IMG_ROOMS) list.push({ name: COMMON, color: "#9AA5B1", common: true });
+    list.forEach((t, k) => {
+      const x0 = 115 + 317 * k, x1 = x0 + 315, cu = x0 + 160, team = t.common ? "" : t.name;
+      R.push({ kind: "room", team, common: !!t.common, color: t.color, poly: [[x0, 112], [x1, 112], [x1, 392], [x0, 392]] });
+      if (k > 0) wall(x0, 112, x0, 392);
+      wall(x0, 392, x0 + 52, 392); wall(x0 + 104, 392, x1, 392);                                   // 앞 유리벽 + 문
+      const door = addNode(`r${k}d`, x0 + 78, HY - 14), inn = addNode(`r${k}i`, x0 + 78, 360);
+      link(hallAt(x0 + 78), door); link(door, inn);
+      const row = addNode(`r${k}r`, x0 + 100, 252);                                              // 책상 줄 앞 통로
+      link(inn, row);
+      [78, 140, 202, 262].forEach((dx, i) => {
+        const via = addNode(`r${k}v${i}`, x0 + dx, 252);
+        link(i ? `r${k}v${i - 1}` : row, via);
+        const c = chairAt(x0 + dx, 212);
+        D.push({ seat: c.seat, via, row: `r${k}`, team });
+        B.push([[x0 + dx - 30, 158], [x0 + dx + 30, 158], [x0 + dx + 30, 196], [x0 + dx - 30, 196]]);   // 책상
+      });
+      // 소파(두 자리) + 커피 탁자(막힘) — 탁자 양옆에서 들어간다
+      B.push(ringAt(x0 + 155, 320, 26, 16));
+      const vL = addNode(`r${k}sL`, x0 + 100, 325), vR = addNode(`r${k}sR`, x0 + 215, 325);
+      link(inn, vL); link(inn, vR); link(row, vL);
+      S.sofa.push({ at: [x0 + 136, 288], via: vL, face: 1, team }, { at: [x0 + 188, 288], via: vR, face: -1, team });
+      CHATS.push({ pts: [[x0 + 136, 288], [x0 + 188, 288]], vias: [vL, vR], sit: true, team });
+      CHATS.push({ pts: [[x0 + 230, 350], [x0 + 285, 350]], via: inn, team });
+      LB.push({ text: team, common: !!t.common, at: [cu, 392], color: t.color, side: 1 });
+    });
+
+    // ---------- 탕비실(x 175~445) ----------
+    R.push({ kind: "kitchen", poly: [[175, 470], [445, 470], [445, 735], [175, 735]] });
+    wall(175, 470, 190, 470); wall(232, 470, 445, 470); wall(175, 470, 175, 735); wall(445, 470, 445, 735); wall(175, 735, 445, 735);
+    addNode("kd", 211, HY + 20); addNode("ki", 211, 505); link(hallAt(211), "kd"); link("kd", "ki");
+    B.push([[185, 480], [440, 480], [440, 540], [185, 540]]);                                      // 카운터(위)
+    B.push([[185, 540], [230, 540], [230, 700], [185, 700]]);                                      // 카운터(왼쪽)
+    addNode("kc", 330, 600); link("ki", "kc");
+    S.coffee.push({ at: [300, 556], via: "kc", face: -1 }, { at: [350, 556], via: "kc", face: -1 });
+    B.push(ringAt(310, 655, 42, 30));                                                               // 둥근 탁자
+    addNode("kcL", 255, 700); addNode("kcR", 380, 700); link("kc", "kcL"); link("kc", "kcR");
+    S.cafe.push({ at: [262, 662], via: "kcL", face: 1 }, { at: [360, 662], via: "kcR", face: -1 });
+    CHATS.push({ pts: [[262, 662], [360, 662]], vias: ["kcL", "kcR"], sit: true });
+
+    // ---------- 라운지(x 455~840) ----------
+    R.push({ kind: "lounge", poly: [[455, 470], [840, 470], [840, 735], [455, 735]] });
+    wall(508, 470, 840, 470); wall(840, 470, 840, 735); wall(455, 735, 840, 735);
+    addNode("ld", 480, HY + 20); addNode("li", 480, 520); link(hallAt(480), "ld"); link("ld", "li");
+    B.push([[535, 480], [770, 480], [770, 560], [535, 560]]);                                      // 책장
+    B.push(ringAt(655, 690, 34, 22));                                                               // 라운지 탁자
+    addNode("lc", 600, 580); link("li", "lc");
+    addNode("lsL", 560, 720); addNode("lsR", 745, 650); link("lc", "lsL"); link("lc", "lsR"); link("lsL", "lsR");
+    S.sofa.push({ at: [566, 640], via: "lsL", face: 1 }, { at: [640, 606], via: "lc", face: -1 }, { at: [700, 606], via: "lsR", face: -1 });
+    CHATS.push({ pts: [[640, 606], [700, 606]], vias: ["lc", "lsR"], sit: true });
+    S.armchair.push({ at: [745, 712], via: "lsR", face: -1 });
+    S.stroll.push({ at: [800, 560], via: "lc" });
+
+    // ---------- 회의실(x 850~1250) ----------
+    R.push({ kind: "meeting", poly: [[850, 470], [1250, 470], [1250, 735], [850, 735]] });
+    wall(850, 470, 1140, 470); wall(1190, 470, 1250, 470); wall(850, 470, 850, 735); wall(1250, 470, 1250, 735); wall(850, 735, 1250, 735);
+    addNode("md", 1165, HY + 20); addNode("mi", 1165, 520); link(hallAt(1165), "md"); link("md", "mi");
+    B.push([[948, 588], [1132, 588], [1132, 692], [948, 692]]);                                     // 회의 탁자
+    addNode("mf", 1040, 758); addNode("mr", 1180, 640); link("mi", "mr"); link("mr", "mf");
+    [985, 1040, 1095].forEach((x, i) => {
+      const c = chairAt(x, 705);
+      OF.push({ seat: c.seat, via: "mf", chair: c.idx });
+      if (i !== 1) S.meeting.push({ at: c.seat, via: "mf", face: 1, chair: c.idx });
+    });
+    S.board.push({ at: [1205, 600], via: "mr", face: 1 });
+    CHATS.push({ pts: [[985, 705], [1040, 705], [1095, 705]], via: "mf" });
+
+    // ---------- 서버실(x 1265~1480) ----------
+    R.push({ kind: "server", poly: [[1265, 470], [1480, 470], [1480, 735], [1265, 735]] });
+    wall(1312, 470, 1480, 470); wall(1265, 470, 1265, 735); wall(1265, 735, 1480, 735);
+    addNode("sd", 1290, HY + 20); addNode("si", 1290, 520); link(hallAt(1290), "sd"); link("sd", "si");
+    B.push([[1318, 545], [1378, 545], [1378, 690], [1318, 690]]); B.push([[1392, 545], [1452, 545], [1452, 690], [1392, 690]]);
+    addNode("sr", 1300, 718); link("si", "sr");
+    const rackAt = [1348, 716];
+    S.server.push({ at: rackAt, via: "sr", face: 1 });
+    OFFICE_HOMES = { server: { work: { at: rackAt, via: "sr", face: 1 }, rest: 0.75, queue: -1 } };
+
+    OFFICE_NODES = N; OFFICE_EDGES = E; OFFICE_WALLS = W; OFFICE_BLOCKS = B;
+    OFFICE_DESKS = D; OFFICE_OVERFLOW = OF; OFFICE_SPOTS = S; OFFICE_CHATS = CHATS;
+    OFFICE_ROOMS = R; OFFICE_FURNITURE = []; OFFICE_LABELS = LB;
+    OFFICE_ATLAS.chairs = CH;
+    return { rooms: IMG_ROOMS, w: OFFICE_W, h: OFFICE_H, image: true };
+  }
+
   /** 설정(teams·staff) → build 에 넣을 팀 목록. staff 로 팀별 인원을 센다 */
   function teamsFromConfig(cfg) {
     const teams = Object.entries(cfg?.teams || {}).map(([name, v]) => ({ name, color: (v && v.color) || "#8FA3B8", size: 0 }));
     for (const s of Object.values(cfg?.staff || {})) { const t = teams.find(x => x.name === s.team); if (t) t.size++; }
     return teams;
   }
-  const key = teams => JSON.stringify(teams.map(t => [t.name, t.color, Math.max(3, Math.min(6, t.size + 1))]));
+  const key = (teams, layout) => layout + JSON.stringify(teams.map(t => [t.name, t.color, Math.max(3, Math.min(6, t.size + 1))]));
+  /** 지도 만들기 — layout "image"(그림 위 고정 좌표, 기본) | "generated"(팀 수대로 방 생성) */
+  const buildFor = (teams, layout) => (layout === "generated" ? build(teams) : buildImage(teams));
 
-  return { build, teamsFromConfig, key, iso, uv, size: () => SIZE, TX, TY, WALL_H, SIT, COMMON };
+  return { build, buildImage, buildFor, teamsFromConfig, key, iso, uv, size: () => SIZE, TX, TY, WALL_H, SIT, COMMON };
 })();
