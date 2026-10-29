@@ -176,7 +176,8 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
           if (typeof body.procedure === 'string' && body.procedure) parts.push(procedurePrompt(body.procedure));
           if (typeof body.task === 'string' && body.task.trim()) parts.push(body.task);
           const rec = startTask({ who: body.who || key, cwd, task: parts.join('\n\n'), mode: body.mode, model: body.model, continueSession: !!body.continueSession,
-            systemPrompt: staffContext(cfg, key || path.basename(cwd), cwd), replyTo: typeof body.replyTo === 'string' ? body.replyTo : '' });
+            systemPrompt: staffContext(cfg, key || path.basename(cwd), cwd), replyTo: typeof body.replyTo === 'string' ? body.replyTo : '',
+            forwardFrom: typeof body.forwardFrom === 'string' ? body.forwardFrom : '' });
           return sendJson(res, 200, { ok: true, task: rec });
         } catch (e) {
           return sendJson(res, 400, { error: e.message, code: e.code || 'bad', parent: e.parent || '' });

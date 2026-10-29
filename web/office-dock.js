@@ -10,14 +10,14 @@ const OfficeDock = (() => {
   const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify(body) });
   const samePath = (a, b) => String(a || "").replace(/[\\/]+$/, "").toLowerCase() === String(b || "").replace(/[\\/]+$/, "").toLowerCase();
   const local = iso => (iso && !Number.isNaN(Date.parse(iso)) ? new Date(iso).toLocaleString("sv").slice(5, 16) : "—");
-  const D = { open: false, who: null, tab: "chat", tasks: [], showLog: new Set(), replyTo: "", timer: 0, procs: [], demo: false, people: [], quick: [] };
+  const D = { open: false, who: null, tab: "chat", tasks: [], showLog: new Set(), replyTo: "", timer: 0, procs: [], demo: false, people: [], quick: [], fwd: "", fwdNote: "", fwdTo: "", roster: [] };
   const DONE_WINDOW_MS = 24 * 3600 * 1000;    // 받은편지함 '최근 보고' 는 하루치
 
   // ---------- 열고 닫기 ----------
   function open(person, tab) {
     D.who = person ? { name: person.name, path: person.path, color: person.color || "#9AA5B1", team: person.team || "", title: person.title || "" } : D.who;
     if (tab) D.tab = tab;
-    D.open = true; D.replyTo = "";
+    D.open = true; D.replyTo = ""; D.fwd = ""; D.roster = [];
     $("dock").hidden = false;
     document.body.classList.add("dock-open");
     head(); tabs(); refresh();
@@ -155,7 +155,7 @@ const OfficeDock = (() => {
       const me = el("li", "d-msg me");
       const text = x.task.replace(/^먼저 이 폴더의 \.claude\/procedures\/(.+?)\.md 절차서를 읽어라[^\n]*\n*/, "📋 $1\n").trim();
       me.append(el("div", "b", text.length > 500 ? text.slice(0, 500) + "…" : text));
-      me.append(el("div", "m", local(x.startedAt) + (x.schedule ? " · ⏰" : "") + (x.replyTo ? " · ↩" : "") + (x.mode === "plan" ? " · " + t("gate.plan") : "")));
+      me.append(el("div", "m", local(x.startedAt) + (x.schedule ? " · ⏰" : "") + (x.replyTo ? " · ↩" : "") + (x.mode === "plan" ? " · " + t("gate.plan") : "") + (x.fromWho ? " · " + t("fwd.from", { a: x.fromWho }) : "")));
       box.append(me);
       const them = el("li", "d-msg them" + (x.question && !x.answeredBy ? " q" : "") + (x.status === "failed" || x.status === "error" ? " fail" : ""));
       let body = "";
@@ -176,10 +176,12 @@ const OfficeDock = (() => {
         else { const g = el("button", "gate", t("gate.run")); g.onclick = () => approve(x); m.append(g); }
       }
       if (x.question && !x.answeredBy && x.status !== "running") { const r = el("button", null, t("dock.reply")); r.onclick = () => { D.replyTo = x.id; $("dock-input").placeholder = "↩ " + t("dock.reply"); $("dock-input").focus(); }; m.append(r); }
+      if (x.status === "done" && (x.report || x.question)) { const fw = el("button", null, t("fwd") + " →"); fw.onclick = () => { D.fwd = D.fwd === x.id ? "" : x.id; D.fwdNote = ""; renderChat(); if (D.fwd) roster().then(renderChat); }; m.append(fw); }
       const lg = el("button", null, D.showLog.has(x.id) ? t("dock.hide") : t("dock.log")); lg.onclick = () => { if (D.showLog.has(x.id)) D.showLog.delete(x.id); else D.showLog.add(x.id); renderChat(); }; m.append(lg);
       if (x.status === "running") { const s = el("button", null, t("dock.stop")); s.onclick = async () => { await post("/api/admin/task/stop", { id: x.id }); loadTasks(); }; m.append(s); }
       them.append(m);
       if (D.showLog.has(x.id)) them.append(el("pre", null, (x.log || "") + (x.status === "running" ? "\n…" : "")));
+      if (D.fwd === x.id) them.append(forwardForm(x));                     // 3초마다 다시 그려도 전달 폼은 남는다
       box.append(them);
     }
     box.scrollTop = box.scrollHeight;
@@ -211,6 +213,45 @@ const OfficeDock = (() => {
   function elapsed(iso) {
     const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
     return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+  }
+  // 직원 간 전달 — 이 보고를 다른 직원의 새 업무로(원 보고는 서버가 붙인다)
+  async function roster() {                                   // 명부(경로 있는 직원) + 지금 사무실에 있는 사람
+    const out = [];
+    if (D.roster.length) return D.roster;
+    try {
+      const r = await fetch("/api/admin/config", { cache: "no-store" });
+      const cfg = (await r.json()).config || {};
+      for (const [key, s] of Object.entries(cfg.staff || {})) {
+        const p = s.path || (/^([A-Za-z]:[\\/]|\/)/.test(key) ? key : "");
+        if (p && !s.hidden) out.push({ name: s.name || key, path: p, team: s.team || "", title: s.title || "", color: s.color || (cfg.teams?.[s.team]?.color) || "#9AA5B1", folder: key });
+      }
+    } catch { /* 명부 없이 */ }
+    for (const p of D.people) if (p.path && !out.some(o => samePath(o.path, p.path))) out.push(p);
+    D.roster = out;
+    return out;
+  }
+  function forwardForm(x) {
+    const others = D.roster.filter(p => !samePath(p.path, D.who.path));
+    const box = el("div", "d-fwd");
+    if (!others.length) { box.append(el("span", "d-status", D.roster.length ? t("fwd.none") : "…")); return box; }
+    const sel = el("select"); for (const p of others) { const o = el("option", null, p.name + (p.team ? " · " + p.team : "")); o.value = p.path; sel.append(o); }
+    if (D.fwdTo) sel.value = D.fwdTo; sel.onchange = () => { D.fwdTo = sel.value; };
+    const note = el("input"); note.type = "text"; note.placeholder = t("fwd.note"); note.maxLength = 500; note.value = D.fwdNote; note.oninput = () => { D.fwdNote = note.value; };
+    const go = el("button", "gate", t("fwd.send")); go.type = "button";
+    go.onclick = async () => {
+      if (D.demo) { alert(t("dock.demo")); return; }
+      const to = others.find(p => samePath(p.path, sel.value)); if (!to) return;
+      go.disabled = true;
+      try {
+        const r = await post("/api/admin/task", { who: to.name, cwd: to.path, key: to.folder || "", task: note.value.trim() || t("fwd.note").split(" (")[0], mode: $("dock-mode").value === "plan" ? "acceptEdits" : $("dock-mode").value, continueSession: true, forwardFrom: x.id });
+        const b = await r.json().catch(() => ({}));
+        if (!r.ok || !b.ok) throw new Error(b.error || String(r.status));
+        D.fwd = ""; D.fwdNote = ""; D.roster = [];
+        open(to, "chat");                                   // 받은 직원 대화로 건너가 진행을 본다
+      } catch (e) { alert(e.message); go.disabled = false; }
+    };
+    box.append(el("label", null, t("fwd.to")), sel, note, go);
+    return box;
   }
   async function approve(x) {
     if (D.demo) { note(t("dock.demo"), true); return; }

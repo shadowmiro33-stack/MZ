@@ -456,3 +456,21 @@ test('업무 일지: 업무가 끝나면 activity·question 이 적히고, 답�
   const br = JSON.parse((await req(port, '/api/admin/briefing', { method: 'POST', headers: good2, body: JSON.stringify({ cwd: proj, type: 'wrapup', who: '개굴' }) })).body);
   assert.match(br.text, /퇴근 전 정리/);
 });
+
+test('직원 간 전달: forwardFrom 으로 보내면 원 업무의 보고가 새 업무 글에 붙고 fromWho 가 남는다', async () => {
+  if (!fs.existsSync(path.join(tmp, 'fake-claude.mjs'))) return;
+  process.env.CLAUDE_BIN = path.join(tmp, process.platform === 'win32' ? 'claude.cmd' : 'claude');
+  const good = { 'Content-Type': 'application/json', 'X-Office-Admin': '1' };
+  const a = path.join(tmp, 'fwd-a'), b = path.join(tmp, 'fwd-b');
+  fs.mkdirSync(a, { recursive: true }); fs.mkdirSync(b, { recursive: true });
+  const t1 = JSON.parse((await req(port, '/api/admin/task', { method: 'POST', headers: good, body: JSON.stringify({ who: '개굴 대리', cwd: a, task: '구조 정리' }) })).body).task;
+  for (let i = 0; i < 40; i++) { await new Promise((r) => setTimeout(r, 100)); const l = JSON.parse((await req(port, '/api/admin/tasks')).body).tasks; if (l.find((x) => x.id === t1.id)?.status !== 'running') break; }
+  fs.appendFileSync(path.join(tmp, 'home', 'tasks', `${t1.id}.log`), '\n## 보고\ndocs 폴더 구조를 정했습니다.\n');   // 가짜 claude 대신 보고를 심는다
+  const t2 = JSON.parse((await req(port, '/api/admin/task', { method: 'POST', headers: good, body: JSON.stringify({ who: '카피 과장', cwd: b, task: '이대로 구현', forwardFrom: t1.id }) })).body).task;
+  assert.equal(t2.fromWho, '개굴 대리');
+  assert.equal(t2.forwardFrom, t1.id);
+  assert.match(t2.task, /^이대로 구현\n\n--- 개굴 대리 의 보고 \(\d{4}-\d{2}-\d{2} \d{2}:\d{2}\) ---\n업무: 구조 정리\n\ndocs 폴더 구조를 정했습니다\./);
+  const t3 = JSON.parse((await req(port, '/api/admin/task', { method: 'POST', headers: good, body: JSON.stringify({ cwd: b, task: '없는 것', forwardFrom: 'nope-999' }) })).body).task;
+  assert.equal(t3.forwardFrom, ''); assert.equal(t3.task, '없는 것');
+  delete process.env.CLAUDE_BIN;
+});

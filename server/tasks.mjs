@@ -72,7 +72,7 @@ function save(rec) {
 }
 
 /** 업무 시작. who = 표시용(직원 이름), cwd = 프로젝트 폴더(있어야 함) */
-export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '', continueSession = false, schedule = '', systemPrompt = '', replyTo = '' }) {
+export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '', continueSession = false, schedule = '', systemPrompt = '', replyTo = '', forwardFrom = '' }) {
   cwd = String(cwd || '').trim().replace(/^["']+|["']+$/g, '');          // 탐색기에서 복사하면 따옴표가 붙는다
   if (!cwd || !fs.existsSync(cwd)) { const e = new Error('폴더가 없습니다 / folder not found: ' + cwd); e.code = 'noDir'; throw e; }
   if (!fs.statSync(cwd).isDirectory()) {                                   // 파일을 적었다 — 그 파일이 있는 폴더를 제안
@@ -80,6 +80,16 @@ export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '', co
   }
   if (typeof task !== 'string' || !task.trim()) throw new Error('업무 내용이 비었습니다 / empty task');
   if (!Object.hasOwn(MODES, mode)) throw new Error('모르는 권한 모드 / unknown mode: ' + mode);
+  // 다른 직원의 보고를 넘겨 받은 업무 — 원 보고를 서버가 붙인다(길어도 통째로, 출처 표시)
+  let fromWho = '';
+  if (forwardFrom && /^[\w-]+$/.test(forwardFrom)) {
+    const orig = readRec(forwardFrom);
+    if (orig) {
+      const { report, question } = parseReport(tail(orig.id));
+      fromWho = orig.who;
+      task = `${task.trim()}\n\n--- ${orig.who} 의 보고 (${orig.startedAt.slice(0, 16).replace('T', ' ')}) ---\n업무: ${orig.task.split('\n')[0].slice(0, 200)}\n\n${report || tail(orig.id).slice(-3000)}${question ? '\n\n' + question : ''}`;
+    }
+  }
   const id = idNow();
   fs.mkdirSync(tasksDir(), { recursive: true });
   const out = fs.openSync(logFile(id), 'a');
@@ -92,7 +102,7 @@ export function startTask({ who, cwd, task, mode = 'acceptEdits', model = '', co
     cwd, windowsHide: true, stdio: ['pipe', out, out],
     shell: IS_WIN && /\.cmd$|\.bat$/i.test(bin), env: { ...process.env, CLAUDE_OFFICE_TASK: id },
   });
-  const rec = { id, who: String(who || path.basename(cwd)), cwd, task: task.slice(0, MAX_TASK), mode, model: model || '', continueSession: !!continueSession, schedule: schedule || '', profile: !!systemPrompt, replyTo: replyTo || '',
+  const rec = { id, who: String(who || path.basename(cwd)), cwd, task: task.slice(0, MAX_TASK), mode, model: model || '', continueSession: !!continueSession, schedule: schedule || '', profile: !!systemPrompt, replyTo: replyTo || '', forwardFrom: fromWho ? forwardFrom : '', fromWho,
     pid: child.pid, startedAt: new Date().toISOString(), endedAt: null, exitCode: null, error: null, bin };
   save(rec);
   if (replyTo && /^[\w-]+$/.test(replyTo)) {                                             // 질문에 답했다 — 원 업무에 표시 + 일지의 질문도 답함

@@ -184,6 +184,10 @@ body.dock-open #office-side { display: none; }                 /* 독이 열리�
 .d-msg .typing::after { content: "▌"; margin-left: 2px; animation: o-pulse 1s ease-in-out infinite; }
 .d-msg .m { display: flex; gap: 6px; align-items: center; margin: 3px 4px 0; font-size: 11px; color: var(--ink3); }
 .d-msg.me .m { justify-content: flex-end; }
+.d-fwd { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0 0; padding: 8px; border: 1px dashed var(--line); border-radius: 8px; background: var(--soft); font-size: 12px; }
+.d-fwd select, .d-fwd input { min-height: 26px; font: inherit; font-size: 12px; border: 1px solid var(--line); border-radius: 6px; background: #FFF; padding: 0 6px; }
+.d-fwd input { flex: 1 1 160px; }
+.d-fwd button.gate { min-height: 26px; padding: 0 10px; border-radius: 6px; color: #FFF; background: var(--ink); border: 1px solid var(--ink); font-weight: 700; cursor: pointer; }
 .d-msg .m button.gate { color: #FFF; background: var(--ink); border-color: var(--ink); font-weight: 700; }
 .d-msg .m button { min-height: 20px; padding: 0 6px; font-size: 11px; border: 1px solid var(--line); border-radius: 4px; background: #FFF; cursor: pointer; }
 .d-chip { padding: 0 6px; border-radius: 4px; background: #EEF1EF; color: #44504A; }
