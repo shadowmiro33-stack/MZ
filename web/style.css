@@ -24,7 +24,24 @@ button { font: inherit; color: inherit; }
 #ask-link { margin-left: auto; min-height: 30px; display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px; font-size: 13px; font-weight: 700;
   color: var(--ask); background: var(--ask-bg); border: 1px solid #F3C2C9; text-decoration: none; white-space: nowrap; animation: o-pulse 1.6s ease-in-out infinite; }
 #ask-link[hidden] { display: none; }
-#ask-link + #admin-link { margin-left: 0; }
+#ask-link + #inbox-link, #ask-link + #inbox-link + #admin-link, #inbox-link + #admin-link { margin-left: 0; }
+#inbox-link { margin-left: auto; min-height: 30px; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid var(--line);
+  border-radius: 6px; font-size: 13px; color: var(--ink2); background: #FFF; cursor: pointer; white-space: nowrap; }
+#inbox-link:hover { background: var(--soft); color: var(--ink); }
+#inbox-link b { min-width: 18px; padding: 0 5px; border-radius: 9px; font-size: 11px; text-align: center; color: #FFF; background: var(--ink3); }
+#inbox-link b.ask { background: var(--ask); }
+#inbox-link b[hidden] { display: none; }
+.d-inbox { list-style: none; margin: 0; padding: 8px 10px; overflow: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.d-ihead { margin: 8px 2px 2px; font-size: 12px; font-weight: 700; color: var(--ink2); }
+.d-ihead.ask { color: var(--ask); }
+.d-irow { padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: #FFF; cursor: pointer; }
+.d-irow:hover { background: var(--soft); }
+.d-irow.ask { border-color: var(--ask); background: var(--ask-bg); }
+.d-itop { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.d-itop b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.d-itop time { color: var(--ink3); font-size: 11px; }
+.d-itext { margin-top: 3px; font-size: 13px; white-space: pre-wrap; word-break: break-word; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+#dock-tabs button:disabled { opacity: .4; cursor: default; }
 #admin-link { margin-left: auto; min-height: 30px; display: inline-flex; align-items: center; padding: 3px 10px; border: 1px solid var(--line);
   border-radius: 6px; font-size: 13px; color: var(--ink2); text-decoration: none; white-space: nowrap; }
 #admin-link:hover { background: var(--soft); color: var(--ink); }

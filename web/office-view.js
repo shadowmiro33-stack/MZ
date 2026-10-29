@@ -508,7 +508,10 @@
     const asks = (ppl || []).filter(p => p.askTask);
     const al = $("ask-link");
     al.hidden = !asks.length;
-    if (asks.length) { al.textContent = t("ask.badge", { n: asks.length }); al.href = "#"; al.title = t("ask.open"); al.onclick = e => { e.preventDefault(); select(asks[0].id, true); }; }
+    if (asks.length) { al.textContent = t("ask.badge", { n: asks.length }); al.href = "#"; al.title = t("ask.open"); al.onclick = e => { e.preventDefault(); if (asks.length > 1) OfficeDock.openAll(); else select(asks[0].id, true); }; }
+    const nb = $("inbox-n"), busy = (ppl || []).filter(p => p.taskId).length;
+    nb.hidden = !(asks.length || busy); nb.textContent = asks.length ? String(asks.length) : `${busy}⏳`; nb.classList.toggle("ask", asks.length > 0);
+    OfficeDock.setPeople(ppl || []);
     OfficeDock.setDemo(!!st.meta?.demo);
     const notes = [];
     if (st.failImg) notes.push(t("note.img"));
@@ -539,7 +542,7 @@
     st.sel = id && (keep || id !== st.sel) ? id : null;
     OfficePanel.render(st.people || [], st.sel, { focus: !!st.sel });
     const p = st.sel && (st.people || []).find(x => x.id === st.sel);
-    if (p && p.path) OfficeDock.open(p, OfficeDock.isOpen() ? undefined : "chat");   // 캐릭터를 누르면 그 직원 대화창
+    if (p && p.path) OfficeDock.open(p, OfficeDock.isOpen() && OfficeDock.tab() !== "all" ? undefined : "chat");   // 캐릭터를 누르면 그 직원 대화창
   }
 
   // ---------- 고정 문구·언어 ----------

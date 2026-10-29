@@ -15,6 +15,7 @@
   <p id="summary" aria-live="polite"></p>
   <span id="demo" data-i18n="demo" hidden>데모 데이터</span>
   <a id="ask-link" href="admin.html" class="ask" hidden></a>
+  <button type="button" id="inbox-link" data-i18n-aria="inbox"><span data-i18n="inbox">📥 받은편지함</span><b id="inbox-n" hidden></b></button>
   <a id="admin-link" href="admin.html" data-i18n="admin" data-i18n-aria="admin.label">⚙ 관리자</a>
   <div id="lang" role="group" data-i18n-aria="lang.label" aria-label="언어">
     <button type="button" data-lang="ko" aria-pressed="false">한국어</button>
@@ -41,7 +42,7 @@
     <header class="d-head">
       <i id="dock-dot" class="o-dot"></i>
       <div class="d-who"><b id="dock-name">—</b><small id="dock-meta"></small></div>
-      <nav id="dock-tabs"><button type="button" data-tab="chat" class="on" data-i18n="dock.tab.chat">대화</button><button type="button" data-tab="today" data-i18n="dock.tab.today">오늘</button></nav>
+      <nav id="dock-tabs"><button type="button" data-tab="all" data-i18n="dock.tab.all">전체</button><button type="button" data-tab="chat" class="on" data-i18n="dock.tab.chat">대화</button><button type="button" data-tab="today" data-i18n="dock.tab.today">오늘</button></nav>
       <a id="dock-admin" href="admin.html" title="관리자" data-i18n="dock.admin">⚙</a>
       <button type="button" id="dock-close" title="닫기">✕</button>
     </header>
@@ -63,6 +64,9 @@
         </div>
         <span id="dock-status" class="d-status"></span>
       </footer>
+    </section>
+    <section id="dock-all" class="d-body" hidden>
+      <ul id="dock-inbox" class="d-inbox"></ul>
     </section>
     <section id="dock-today" class="d-body" hidden>
       <h3><span data-i18n="today">오늘</span> <small id="dock-jdate"></small></h3>

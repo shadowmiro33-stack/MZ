@@ -10,7 +10,8 @@ const OfficeDock = (() => {
   const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify(body) });
   const samePath = (a, b) => String(a || "").replace(/[\\/]+$/, "").toLowerCase() === String(b || "").replace(/[\\/]+$/, "").toLowerCase();
   const local = iso => (iso && !Number.isNaN(Date.parse(iso)) ? new Date(iso).toLocaleString("sv").slice(5, 16) : "—");
-  const D = { open: false, who: null, tab: "chat", tasks: [], showLog: new Set(), replyTo: "", timer: 0, procs: [], demo: false };
+  const D = { open: false, who: null, tab: "chat", tasks: [], showLog: new Set(), replyTo: "", timer: 0, procs: [], demo: false, people: [] };
+  const DONE_WINDOW_MS = 24 * 3600 * 1000;    // 받은편지함 '최근 보고' 는 하루치
 
   // ---------- 열고 닫기 ----------
   function open(person, tab) {
@@ -21,25 +22,39 @@ const OfficeDock = (() => {
     document.body.classList.add("dock-open");
     head(); tabs(); refresh();
   }
+  // 받은편지함 — 직원을 고르지 않고 모든 직원의 질문·진행·보고를 한눈에
+  function openAll() {
+    D.tab = "all"; D.open = true;
+    $("dock").hidden = false;
+    document.body.classList.add("dock-open");
+    head(); tabs(); refresh();
+  }
   function close() {
     D.open = false; $("dock").hidden = true; document.body.classList.remove("dock-open"); clearTimeout(D.timer);
   }
   function head() {
-    const w = D.who;
+    const w = D.tab === "all" ? null : D.who;
     $("dock-dot").style.background = w ? w.color : "#9AA5B1";
-    $("dock-name").textContent = w ? w.name : "—";
+    $("dock-name").textContent = w ? w.name : D.tab === "all" ? t("inbox.title") : "—";
     $("dock-meta").textContent = w ? [w.title, w.team].filter(Boolean).join(" · ") : "";
     $("dock-path").textContent = w ? w.path : "";
   }
   function tabs() {
-    for (const b of document.querySelectorAll("#dock-tabs button")) b.classList.toggle("on", b.dataset.tab === D.tab);
+    for (const b of document.querySelectorAll("#dock-tabs button")) { b.classList.toggle("on", b.dataset.tab === D.tab); b.disabled = b.dataset.tab !== "all" && !D.who; }
     $("dock-chat").hidden = D.tab !== "chat";
     $("dock-today").hidden = D.tab !== "today";
+    $("dock-all").hidden = D.tab !== "all";
   }
   function refresh() {
-    if (!D.open || !D.who) return;
-    if (D.tab === "chat") { loadTasks(); loadProcs(); } else loadJournal();
+    if (!D.open) return;
+    if (D.tab === "all") loadTasks();
+    else if (!D.who) return;
+    else if (D.tab === "chat") { loadTasks(); loadProcs(); } else loadJournal();
   }
+  // 사무실 화면이 주는 사람 목록(색·이름·경로) — 받은편지함에서 직원으로 건너뛸 때 쓴다
+  function setPeople(list) { D.people = list || []; if (D.open && D.tab === "all") renderAll(); }
+  const personAt = (cwd, who) => D.people.find(p => samePath(p.path, cwd)) || { name: who || cwd, path: cwd, color: "#9AA5B1" };
+  function jump(x) { D.who = null; open(personAt(x.cwd, x.who), "chat"); }
 
   // ---------- 대화 ----------
   async function loadTasks() {
@@ -48,7 +63,7 @@ const OfficeDock = (() => {
       if (!r.ok) return;
       const before = D.tasks.filter(x => x.status === "running").length;
       D.tasks = (await r.json()).tasks || [];
-      renderChat();
+      if (D.tab === "all") renderAll(); else renderChat();
       if (D.tasks.filter(x => x.status === "running").length < before && D.tab === "today") loadJournal();
     } catch { /* 다음에 */ }
     clearTimeout(D.timer);
@@ -63,6 +78,33 @@ const OfficeDock = (() => {
       for (const p of (await r.json()).procedures || []) { const o = el("option", null, `📋 ${p.name}`); o.value = p.slug; sel.append(o); }
       sel.value = [...sel.options].some(o => o.value === cur) ? cur : "";
     } catch { /* 없음 */ }
+  }
+  function renderAll() {
+    const box = $("dock-inbox");
+    box.replaceChildren();
+    const now = Date.now();
+    const byTime = (a, b) => ((b.endedAt || b.startedAt) < (a.endedAt || a.startedAt) ? -1 : 1);
+    const asks = D.tasks.filter(x => x.status !== "running" && x.question && !x.answeredBy).sort(byTime);
+    const runs = D.tasks.filter(x => x.status === "running").sort(byTime);
+    const done = D.tasks.filter(x => x.status !== "running" && !(x.question && !x.answeredBy) && x.endedAt && now - Date.parse(x.endedAt) < DONE_WINDOW_MS).sort(byTime).slice(0, 20);
+    const group = (title, cls, items, textOf) => {
+      if (!items.length) return;
+      box.append(el("li", "d-ihead " + cls, `${title} ${items.length}`));
+      for (const x of items) {
+        const p = personAt(x.cwd, x.who);
+        const li = el("li", "d-irow " + cls);
+        const dot = el("i", "o-dot"); dot.style.background = p.color;
+        const top = el("div", "d-itop"); top.append(dot, el("b", null, p.name), el("time", null, local(x.endedAt || x.startedAt)));
+        li.append(top, el("div", "d-itext", textOf(x)));
+        li.onclick = () => jump(x);
+        box.append(li);
+      }
+    };
+    const first = s => String(s || "").trim().split("\n").map(l => l.trim()).filter(l => l && !/^#+ /.test(l)).slice(0, 2).join(" ");
+    group("❓ " + t("inbox.ask"), "ask", asks, x => first(x.question));
+    group("⏳ " + t("inbox.run"), "run", runs, x => first(x.task) + (x.log ? "\n" + liveTail(x.log).split("\n").slice(-1)[0] : ""));
+    group("📝 " + t("inbox.done"), "done", done, x => (x.status === "done" ? "" : `[${t("inbox.fail")}] `) + (first(x.report) || first(x.log) || t("dock.noReport")));
+    if (!box.children.length) box.append(el("li", "d-empty", t("inbox.empty")));
   }
   function renderChat() {
     const box = $("dock-msgs");
@@ -175,7 +217,8 @@ const OfficeDock = (() => {
     D.demo = !!demo;
     applyText();
     $("dock-close").onclick = close;
-    for (const b of document.querySelectorAll("#dock-tabs button")) b.onclick = () => { D.tab = b.dataset.tab; tabs(); refresh(); };
+    for (const b of document.querySelectorAll("#dock-tabs button")) b.onclick = () => { D.tab = b.dataset.tab; head(); tabs(); refresh(); };
+    $("inbox-link").onclick = () => (D.open && D.tab === "all" ? close() : openAll());
     $("dock-send").onclick = send;
     $("dock-input").addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") send(); });
     $("dock-jform").onsubmit = async e => { e.preventDefault(); const v = $("dock-jtext").value.trim(); if (!v) return; await post("/api/admin/journal", { cwd: D.who.path, kind: $("dock-jkind").value, text: v }); $("dock-jtext").value = ""; loadJournal(); };
@@ -184,5 +227,5 @@ const OfficeDock = (() => {
     setInterval(pollNotices, 60000);
     setTimeout(pollNotices, 2500);
   }
-  return { init, open, close, applyText, refresh, setDemo: v => { D.demo = !!v; }, isOpen: () => D.open, who: () => D.who };
+  return { init, open, openAll, close, applyText, refresh, setPeople, setDemo: v => { D.demo = !!v; }, isOpen: () => D.open, tab: () => D.tab, who: () => D.who };
 })();
