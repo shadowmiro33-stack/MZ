@@ -200,6 +200,23 @@ function prune() {
   } catch { /* 정리는 실패해도 된다 */ }
 }
 
+/** 지금 도는 업무 — { pathKey(cwd): { id, who, task, startedAt, line } } (폴더마다 하나). 사무실 화면이 그 캐릭터를 일하게 한다 */
+export function runningTasks(pathKeyFn) {
+  const out = {};
+  for (const x of listTasks(60)) {
+    if (x.status !== 'running') continue;
+    const k = pathKeyFn(x.cwd);
+    if (out[k]) continue;
+    out[k] = { id: x.id, who: x.who, task: x.task.split('\n').find((l) => l.trim() && !/절차서를 읽어라/.test(l)) || x.task, startedAt: x.startedAt, line: lastLine(x.log) };
+  }
+  return out;
+}
+/** 로그의 마지막 뜻있는 줄(진행 표시용, 80자) */
+export function lastLine(log) {
+  const lines = String(log || '').split('\n').map((l) => l.trim()).filter((l) => l && !/^#+ /.test(l) && l !== '…');
+  return lines.length ? lines[lines.length - 1].slice(0, 80) : '';
+}
+
 /** 답하지 않은 질문 — { pathKey(cwd): { id, who, question, at } } (가장 최근 하나). 사무실 화면이 그 캐릭터를 폴짝 뛰게 한다 */
 export function openQuestions(pathKeyFn) {
   const out = {};

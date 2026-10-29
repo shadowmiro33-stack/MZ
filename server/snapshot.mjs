@@ -9,7 +9,7 @@ import { cleanupCards, mtimeOf, readCards, recentTranscripts, transcriptFor } fr
 import { LOG_N, MAX_SUBS, oneLine, readTranscript, runningSubagents } from './activity.mjs';
 import { installedEvents } from './hooks-config.mjs';
 import { decorate, homeOf, isHidden } from './staff.mjs';
-import { openQuestions } from './tasks.mjs';
+import { openQuestions, runningTasks } from './tasks.mjs';
 
 export const API_VERSION = 1;
 const GIT_TTL_MS = 10 * 60 * 1000; // 루트·커밋 수는 10분 캐시 — git 을 3초마다 두드리지 않게
@@ -156,20 +156,21 @@ export async function buildSnapshot(opts = {}) {
 
   // 관리자 업무에서 답 안 한 질문이 있는 폴더 — 세션이 없어도 캐릭터를 세워 질문을 알린다
   const asks = opts.asks !== undefined ? opts.asks : openQuestions(pathKey);
-  for (const [k, q] of Object.entries(asks)) {
+  // 지금 도는 업무(claude -p) — 훅 세션이 아직 안 잡혀도 캐릭터가 일하는 모습을 보인다
+  const runs = opts.runs !== undefined ? opts.runs : runningTasks(pathKey);
+  for (const [k, q] of [...Object.entries(asks), ...Object.entries(runs)]) {
     if (groups.has(k)) continue;
-    const root = [...cwds].map((c) => roots.get(c)).find((r) => pathKey(r) === k) || null;
-    const dir = root || Object.keys(asks).length ? k : null;
-    if (!dir) continue;
-    groups.set(k, { root: fs.existsSync(dir) ? path.resolve(dir) : dir, items: [], ask: q });
+    groups.set(k, { root: fs.existsSync(k) ? path.resolve(k) : k, items: [], ask: asks[k] });
   }
   const people = [];
   for (const [key, { root, items, ask }] of groups) {
     const base = path.basename(root) || root;
     if (isHidden(cfg, base, key)) continue;
     const q = ask || asks[key];
+    const run = runs[key];
     let status = items.length ? items.map((s) => s.status).sort((a, b) => PRIORITY[a] - PRIORITY[b])[0] : 'rest';
     const askItems = items.filter((s) => s.status === 'decision').sort((a, b) => b.at - a.at);
+    if (run && status === 'rest') status = 'working';             // 업무가 도는 중 = 일하는 중
     if (q) status = 'decision';                                   // 관리자 질문 = 승인 대기처럼 폴짝
     const commits = await commitCount(root, now);
     const subs = items.flatMap((s) => runningSubagents(s.transcript, now));
@@ -179,7 +180,7 @@ export async function buildSnapshot(opts = {}) {
     const log = items.flatMap((s) => s.info.log).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0)).slice(-LOG_N);
     people.push(decorate({
       id: root,
-      name: (!items.length && q && q.who && q.who !== base) ? q.who : base,
+      name: (!items.length && (q || run) && (q || run).who && (q || run).who !== base) ? (q || run).who : base,
       path: root,
       status,
       pending: askItems.length + (q ? 1 : 0),
@@ -187,12 +188,14 @@ export async function buildSnapshot(opts = {}) {
       askTask: q ? q.id : '',
       sessions: items.length,
       source: items.some((s) => s.source === 'hook') ? 'hook' : items.length ? 'transcript' : 'task',
+      taskId: run ? run.id : '',
+      taskSince: run ? run.startedAt : '',
       commits,
       kid: commits !== null && commits < cfg.kidCommits,
       home: homeOf(cfg, base, key),
       subs: subs.slice(0, MAX_SUBS),
       subCount: subs.length,
-      doing: latest.info.doing,
+      doing: latest.info.doing || (run ? { k: 'text', a: run.line || run.task } : null),
       log,
     }, cfg, base, key));
   }
