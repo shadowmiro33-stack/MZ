@@ -172,6 +172,7 @@ thinking·빈 글은 건너뛴다. 대화 기록 형식은 Claude Code 내부 �
   업무가 끝나면 activity(+question) 자동 기록. `GET /api/admin/journal?cwd=&date=`, `POST /api/admin/journal` `{ cwd, kind, text }` 또는 `{ cwd, id, done }`.
 - 브리핑(server/briefer.mjs): 경로 있는 직원마다 하루 한 번 아침(09:00)·퇴근 전(17:30) 규칙 기반 브리핑을 일지에 적고 알림 큐에 넣는다. `GET /api/admin/notices`(가져가면 비움), `POST /api/admin/briefing` `{ cwd, type, who }` 즉시.
 - 스냅샷: 답 안 한 질문이 있는 폴더는 세션이 없어도 Person 으로 나오고 status=decision, `askTask`=업무 id, ask="질문: …".
+- `POST /api/admin/task` 의 `forwardFrom`(업무 id): 그 업무의 `## 보고`(없으면 로그 꼬리)를 새 업무 글 뒤에 `--- {who} 의 보고 ---` 로 붙이고, 기록에 `forwardFrom`·`fromWho` 를 남긴다. 모르는 id 면 무시.
 - `GET/POST /api/admin/quick` — 빠른 지시 칩 `{ quick: [{ id, name, task, procedure, mode, cont, team }] }` 통째로 저장(`~/.claude-office/quick.json`, 30개 상한).
 - 스냅샷: 업무가 도는 폴더(`claude -p` 실행 중)는 세션이 없어도 Person 으로 나오고 status=working, `taskId`=업무 id, `taskSince`=시작 시각, `doing`={k:"text", a: 로그 마지막 줄}. 훅 세션이 있으면 세션 상태가 우선.
 - 그 밖의 경로에 POST 는 여전히 405.
