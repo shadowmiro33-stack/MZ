@@ -52,7 +52,7 @@ const OfficeDock = (() => {
       if (D.tasks.filter(x => x.status === "running").length < before && D.tab === "today") loadJournal();
     } catch { /* 다음에 */ }
     clearTimeout(D.timer);
-    if (D.open && D.tasks.some(x => x.status === "running")) D.timer = setTimeout(loadTasks, 3000);
+    if (D.open && D.tasks.some(x => x.status === "running")) D.timer = setTimeout(loadTasks, 2000);
   }
   async function loadProcs() {
     const sel = $("dock-proc");
@@ -77,7 +77,7 @@ const OfficeDock = (() => {
       box.append(me);
       const them = el("li", "d-msg them" + (x.question && !x.answeredBy ? " q" : "") + (x.status === "failed" || x.status === "error" ? " fail" : ""));
       let body = "";
-      if (x.status === "running") body = t("dock.working");
+      if (x.status === "running") body = liveTail(x.log) || t("dock.working");
       else if (x.question) body = (x.report ? x.report + "\n\n" : "") + x.question;
       else if (x.report) body = x.report;
       else if (x.status === "error") body = `[error] ${x.error || ""}`;
@@ -86,7 +86,7 @@ const OfficeDock = (() => {
       if (x.status === "running") bb.classList.add("typing");
       them.append(bb);
       const m = el("div", "m");
-      m.append(el("span", `d-chip ${x.status}`, t("st." + x.status)));
+      m.append(el("span", `d-chip ${x.status}`, t("st." + x.status) + (x.status === "running" ? " " + elapsed(x.startedAt) : "")));
       if (x.question && x.answeredBy) m.append(el("span", null, "✓ " + t("dock.answered")));
       if (x.question && !x.answeredBy && x.status !== "running") { const r = el("button", null, t("dock.reply")); r.onclick = () => { D.replyTo = x.id; $("dock-input").placeholder = "↩ " + t("dock.reply"); $("dock-input").focus(); }; m.append(r); }
       const lg = el("button", null, D.showLog.has(x.id) ? t("dock.hide") : t("dock.log")); lg.onclick = () => { if (D.showLog.has(x.id)) D.showLog.delete(x.id); else D.showLog.add(x.id); renderChat(); }; m.append(lg);
@@ -115,6 +115,15 @@ const OfficeDock = (() => {
     } finally {
       $("dock-send").disabled = false;
     }
+  }
+  // 진행 중 — 로그의 마지막 몇 줄을 말풍선에 흘려 보여 준다(제목·빈 줄 빼고)
+  function liveTail(log) {
+    const lines = String(log || "").split("\n").map(l => l.trimEnd()).filter(l => l.trim() && l.trim() !== "…");
+    return lines.slice(-4).join("\n");
+  }
+  function elapsed(iso) {
+    const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
+    return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
   }
   function note(msg, err) { const s = $("dock-status"); s.textContent = msg || ""; s.className = "d-status" + (err ? " err" : ""); }
 

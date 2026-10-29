@@ -49,7 +49,7 @@ function transcript(cwd, sid, rows) {
 function putCard(sid, card) {
   fs.writeFileSync(path.join(process.env.CLAUDE_OFFICE_HOME, 'sessions', `${sid}.json`), JSON.stringify({ sessionId: sid, ...card }));
 }
-const snap = (cfg = {}, more = {}) => buildSnapshot({ cfg: normalizeConfig(cfg), starts: STARTS, asks: {}, ...more });
+const snap = (cfg = {}, more = {}) => buildSnapshot({ cfg: normalizeConfig(cfg), starts: STARTS, asks: {}, runs: {}, ...more });
 const live = { pid: 4242, pidStart: START };
 const read = (f) => ({ type: 'tool_use', name: 'Read', input: { file_path: f } });
 
@@ -65,7 +65,7 @@ test('형식: 최상위·Person 필드 전부', async () => {
   assert.ok(!Number.isNaN(Date.parse(s.now)));
   assert.equal(s.people.length, 1);
   const p = s.people[0];
-  assert.deepEqual(Object.keys(p).sort(), ['ask', 'askTask', 'color', 'commits', 'doing', 'folder', 'home', 'id', 'kid', 'kind', 'log', 'name', 'path', 'pending', 'sessions', 'source', 'status', 'subCount', 'subs', 'team', 'title'].sort());
+  assert.deepEqual(Object.keys(p).sort(), ['ask', 'askTask', 'color', 'commits', 'doing', 'folder', 'home', 'id', 'kid', 'kind', 'log', 'name', 'path', 'pending', 'sessions', 'source', 'status', 'subCount', 'subs', 'taskId', 'taskSince', 'team', 'title'].sort());
   assert.equal(p.id, path.resolve(cwd));
   assert.equal(p.name, 'my-app');
   assert.equal(p.folder, 'my-app');
@@ -330,4 +330,24 @@ test('관리자 질문이 답 없이 남아 있으면 그 폴더 캐릭터가 �
   assert.equal(s.people[0].askTask, 'T1');
   assert.equal(s.people[0].source, 'task');
   assert.equal(s.people[0].sessions, 0);
+});
+
+test('업무가 도는 중이면(claude -p) 세션이 없어도 그 폴더 캐릭터가 일하는 중 + 말풍선에 진행 줄', async () => {
+  const base = fresh();
+  const cwd = folder(base, 'runner');
+  const { pathKey } = await import('../server/paths.mjs');
+  const s = await snap({}, { runs: { [pathKey(cwd)]: { id: 'R1', who: '별이 사원', task: '매거진 발행', startedAt: iso(0), line: '기사 3건 수집 중' } } });
+  assert.equal(s.people.length, 1);
+  assert.equal(s.people[0].status, 'working');
+  assert.equal(s.people[0].name, '별이 사원');
+  assert.deepEqual(s.people[0].doing, { k: 'text', a: '기사 3건 수집 중' });
+  assert.equal(s.people[0].taskId, 'R1');
+  assert.equal(s.people[0].source, 'task');
+});
+
+test('lastLine — 제목·빈 줄을 빼고 마지막 줄 80자', async () => {
+  const { lastLine } = await import('../server/tasks.mjs');
+  assert.equal(lastLine('## 보고\n\n첫 줄\n둘째 줄  \n\n'), '둘째 줄');
+  assert.equal(lastLine(''), '');
+  assert.equal(lastLine('x'.repeat(100)).length, 80);
 });
