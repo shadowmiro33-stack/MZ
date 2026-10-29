@@ -10,7 +10,7 @@ const OfficeDock = (() => {
   const post = (url, body) => fetch(url, { method: "POST", headers: { "Content-Type": "application/json", "X-Office-Admin": "1" }, body: JSON.stringify(body) });
   const samePath = (a, b) => String(a || "").replace(/[\\/]+$/, "").toLowerCase() === String(b || "").replace(/[\\/]+$/, "").toLowerCase();
   const local = iso => (iso && !Number.isNaN(Date.parse(iso)) ? new Date(iso).toLocaleString("sv").slice(5, 16) : "—");
-  const D = { open: false, who: null, tab: "chat", tasks: [], showLog: new Set(), replyTo: "", timer: 0, procs: [], demo: false, people: [] };
+  const D = { open: false, who: null, tab: "chat", tasks: [], showLog: new Set(), replyTo: "", timer: 0, procs: [], demo: false, people: [], quick: [] };
   const DONE_WINDOW_MS = 24 * 3600 * 1000;    // 받은편지함 '최근 보고' 는 하루치
 
   // ---------- 열고 닫기 ----------
@@ -49,7 +49,47 @@ const OfficeDock = (() => {
     if (!D.open) return;
     if (D.tab === "all") loadTasks();
     else if (!D.who) return;
-    else if (D.tab === "chat") { loadTasks(); loadProcs(); } else loadJournal();
+    else if (D.tab === "chat") { loadTasks(); loadProcs(); loadQuick(); } else loadJournal();
+  }
+
+  // ---------- 빠른 지시 칩 ----------
+  async function loadQuick() {
+    try { const r = await fetch("/api/admin/quick", { cache: "no-store" }); if (r.ok) D.quick = (await r.json()).quick || []; } catch { /* 없음 */ }
+    renderQuick();
+  }
+  function renderQuick() {
+    const box = $("dock-quick");
+    box.replaceChildren();
+    box.title = t("quick.hint");
+    for (const q of D.quick) {
+      if (q.team && D.who && D.who.team && q.team !== D.who.team) continue;
+      const c = el("span", "d-chipq");
+      const b = el("button", null, (q.procedure ? "📋 " : "⚡ ") + q.name); b.type = "button"; b.title = q.task || q.procedure;
+      b.onclick = e => { fillQuick(q); if (e.shiftKey) send(); };
+      const x = el("button", "x", "×"); x.type = "button"; x.title = t("dock.hide");
+      x.onclick = async () => { if (!confirm(t("quick.del", { a: q.name }))) return; await post("/api/admin/quick", { quick: D.quick.filter(z => z.id !== q.id) }); loadQuick(); };
+      c.append(b, x); box.append(c);
+    }
+    const add = el("button", "d-chipq add", t("quick.add")); add.type = "button"; add.title = t("quick.addTitle"); add.onclick = saveQuick;
+    box.append(add);
+  }
+  function fillQuick(q) {
+    $("dock-input").value = q.task || "";
+    const sel = $("dock-proc"); sel.value = [...sel.options].some(o => o.value === q.procedure) ? q.procedure : "";
+    $("dock-mode").value = q.mode || "acceptEdits";
+    $("dock-cont").checked = q.cont !== false;
+    $("dock-input").focus();
+  }
+  async function saveQuick() {
+    const task = $("dock-input").value.trim(), procedure = $("dock-proc").value;
+    if (!task && !procedure) { note(t("quick.empty"), true); $("dock-input").focus(); return; }
+    const sel = $("dock-proc");
+    const name = prompt(t("quick.name"), task ? task.split("\n")[0].slice(0, 30) : sel.options[sel.selectedIndex].textContent.replace(/^📋 /, ""));
+    if (!name || !name.trim()) return;
+    const q = { name: name.trim(), task, procedure, mode: $("dock-mode").value, cont: $("dock-cont").checked };
+    const r = await post("/api/admin/quick", { quick: [...D.quick, q] });
+    if (!r.ok) { note(t("dock.fail") || "!", true); return; }
+    loadQuick();
   }
   // 사무실 화면이 주는 사람 목록(색·이름·경로) — 받은편지함에서 직원으로 건너뛸 때 쓴다
   function setPeople(list) { D.people = list || []; if (D.open && D.tab === "all") renderAll(); }

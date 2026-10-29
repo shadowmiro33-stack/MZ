@@ -17,6 +17,7 @@ import { deleteSchedule, listSchedules, runSchedule, startScheduler, upsertSched
 import { staffContext, staffFor } from './staff.mjs';
 import { briefing as makeBriefing, getDay, pending, record as journalRecord, setDone } from './journal.mjs';
 import { drainNotices, startBriefer } from './briefer.mjs';
+import { listQuick, saveQuick } from './quick.mjs';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -209,6 +210,13 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
       }
       if (adminWrite && route === '/api/admin/task/delete') return sendJson(res, 200, { ok: deleteTask(String(body.id || '')) });
       if (adminWrite && route === '/api/admin/tasks/clear') return sendJson(res, 200, { ok: true, removed: clearTasks() });
+      if (adminWrite && route === '/api/admin/quick') {                   // 빠른 지시 칩 목록 통째로 저장
+        try {
+          return sendJson(res, 200, { ok: true, quick: saveQuick(body) });
+        } catch (e) {
+          return sendJson(res, 500, { error: 'save failed' });
+        }
+      }
       if (adminWrite && route === '/api/admin/journal') {                 // 할 일·메모 추가, 완료 처리
         try {
           const cwd = String(body.cwd || '').replace(/^["']+|["']+$/g, '');
@@ -244,6 +252,7 @@ export function createOfficeServer({ webDir = WEB_DIR, demo = false, snapshot } 
       }
       if (req.method !== 'GET') return send(res, 405, 'method not allowed', undefined, { Allow: 'GET' });
       if (route === '/api/admin/tasks') return sendJson(res, 200, { tasks: listTasks() });
+      if (route === '/api/admin/quick') return sendJson(res, 200, { quick: listQuick() });
       if (route === '/api/admin/schedules') return sendJson(res, 200, { schedules: listSchedules() });
       if (route === '/api/admin/notices') return sendJson(res, 200, { notices: drainNotices() });
       const qs0 = new URLSearchParams(q >= 0 ? raw.slice(q + 1) : '');

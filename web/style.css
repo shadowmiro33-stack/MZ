@@ -171,6 +171,15 @@ body.dock-open #office-side { display: none; }                 /* 독이 열리�
 .d-msg.them.q .b { border-color: var(--ask); background: var(--ask-bg); }
 .d-msg.them.q .b::before { content: "❓ "; }
 .d-msg.them.fail .b { border-color: var(--ask); }
+.d-quick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.d-quick:empty { display: none; }
+.d-chipq { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: 14px; background: #FFF; overflow: hidden; font-size: 12px; }
+.d-chipq button { min-height: 26px; padding: 0 10px; border: 0; background: none; font: inherit; color: var(--ink); cursor: pointer; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.d-chipq button:hover { background: var(--soft); }
+.d-chipq .x { padding: 0 7px; color: var(--ink3); border-left: 1px solid var(--line); }
+.d-chipq .x:hover { color: var(--ask); background: var(--ask-bg); }
+.d-chipq.add { padding: 0 10px; min-height: 26px; border-style: dashed; color: var(--ink3); cursor: pointer; font: inherit; }
+.d-chipq.add:hover { color: var(--ink); background: var(--soft); }
 .d-msg .typing { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--ink2); }
 .d-msg .typing::after { content: "▌"; margin-left: 2px; animation: o-pulse 1s ease-in-out infinite; }
 .d-msg .m { display: flex; gap: 6px; align-items: center; margin: 3px 4px 0; font-size: 11px; color: var(--ink3); }
