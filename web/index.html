@@ -36,6 +36,46 @@
     <h2><span data-i18n="side.log">활동 로그</span> <small class="o-live">● LIVE</small></h2>
     <ol id="office-log"></ol>
   </aside>
+  <!-- 업무 관제 독 — 캐릭터를 누르면 열린다(office-dock.js). 관리자 페이지와 같은 API -->
+  <aside id="dock" hidden>
+    <header class="d-head">
+      <i id="dock-dot" class="o-dot"></i>
+      <div class="d-who"><b id="dock-name">—</b><small id="dock-meta"></small></div>
+      <nav id="dock-tabs"><button type="button" data-tab="chat" class="on" data-i18n="dock.tab.chat">대화</button><button type="button" data-tab="today" data-i18n="dock.tab.today">오늘</button></nav>
+      <a id="dock-admin" href="admin.html" title="관리자" data-i18n="dock.admin">⚙</a>
+      <button type="button" id="dock-close" title="닫기">✕</button>
+    </header>
+    <small id="dock-path" class="d-path"></small>
+    <section id="dock-chat" class="d-body">
+      <ol id="dock-msgs" class="d-msgs"></ol>
+      <footer class="d-composer">
+        <textarea id="dock-input" rows="3" data-i18n-ph="dock.ph" placeholder="업무를 적어 보내세요 — Ctrl+Enter"></textarea>
+        <div class="d-row">
+          <select id="dock-proc"><option value="" data-i18n="dock.proc.none">절차서 없음</option></select>
+          <select id="dock-mode">
+            <option value="acceptEdits" data-i18n="mode.acceptEdits">파일만 고치기</option>
+            <option value="auto" data-i18n="mode.auto">명령도 실행</option>
+            <option value="plan" data-i18n="mode.plan">계획만</option>
+            <option value="bypass" data-i18n="mode.bypass">전부 자동 승인</option>
+          </select>
+          <label class="d-check"><input id="dock-cont" type="checkbox" checked><span data-i18n="dock.cont">이어서</span></label>
+          <button type="button" id="dock-send" data-i18n="dock.send">보내기</button>
+        </div>
+        <span id="dock-status" class="d-status"></span>
+      </footer>
+    </section>
+    <section id="dock-today" class="d-body" hidden>
+      <h3><span data-i18n="today">오늘</span> <small id="dock-jdate"></small></h3>
+      <ul id="dock-jlist" class="d-jlist"></ul>
+      <div id="dock-jpend-wrap" hidden><h4 data-i18n="today.pending">밀린 것</h4><ul id="dock-jpend" class="d-jlist"></ul></div>
+      <form id="dock-jform" class="d-row">
+        <select id="dock-jkind"><option value="todo" data-i18n="j.todo">할 일</option><option value="note" data-i18n="j.note">메모</option></select>
+        <input id="dock-jtext" type="text" maxlength="300" data-i18n-ph="j.ph" placeholder="할 일·메모 입력 후 Enter" autocomplete="off">
+      </form>
+      <div class="d-row"><button type="button" id="dock-morning" data-i18n="j.morning">☀️ 아침 브리핑</button><button type="button" id="dock-wrapup" data-i18n="j.wrapup">🌙 퇴근 전 정리</button></div>
+      <pre id="dock-brief" class="d-brief" hidden></pre>
+    </section>
+  </aside>
 </main>
 
 <script src="i18n.js"></script>
@@ -45,6 +85,7 @@
 <script src="office-path.js"></script>
 <script src="office-life.js"></script>
 <script src="office-panel.js"></script>
+<script src="office-dock.js"></script>
 <script src="office-view.js"></script>
 </body>
 </html>

@@ -68,7 +68,7 @@ const OfficePanel = (() => {
     if (role) li.append(el("p", "o-role", role));
     const w = what(d, open);
     if (w) li.append(el("p", `o-doing ${cls}`, open && mode !== "rest" ? `${t("d.now")} · ${w}` : w));
-    if (d.askTask) { const a = el("a", "o-answer", t("ask.open") + " →"); a.href = "admin.html#chat=" + encodeURIComponent(d.path); li.append(a); }
+    if (d.askTask) { const a = el("a", "o-answer", t("ask.open") + " →"); a.href = "#"; a.onclick = e => { e.preventDefault(); P.pick?.(d.id, true); }; li.append(a); }
     if (open) li.append(details(d));
     else for (const s of (d.subs || []).slice(0, 3)) {
       li.append(el("p", "o-sub", `${subLine(s)}${s.doing ? " — " + I18N.act(s.doing) : ""}`));

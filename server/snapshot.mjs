@@ -179,7 +179,7 @@ export async function buildSnapshot(opts = {}) {
     const log = items.flatMap((s) => s.info.log).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0)).slice(-LOG_N);
     people.push(decorate({
       id: root,
-      name: base,
+      name: (!items.length && q && q.who && q.who !== base) ? q.who : base,
       path: root,
       status,
       pending: askItems.length + (q ? 1 : 0),

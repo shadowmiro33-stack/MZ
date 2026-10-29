@@ -123,3 +123,72 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- 업무 관제 독 — 사무실 오른쪽에 슬라이드 ---------- */
+#dock { width: 420px; flex-shrink: 0; display: flex; flex-direction: column; min-height: 0;
+  background: var(--panel); border-left: 1px solid var(--line); }
+#dock[hidden] { display: none; }
+body.dock-open #office-side { display: none; }                 /* 독이 열리면 오른쪽 패널 대신 — 캔버스는 ResizeObserver 로 다시 맞춘다 */
+.d-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 6px; border-bottom: 1px solid var(--line); }
+.d-head .o-dot { width: 12px; height: 12px; }
+.d-who { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.d-who b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.d-who small { font-size: 12px; color: var(--ink3); }
+#dock-tabs { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+#dock-tabs button { min-height: 28px; padding: 2px 12px; border: 0; background: transparent; font-size: 13px; cursor: pointer; }
+#dock-tabs button + button { border-left: 1px solid var(--line); }
+#dock-tabs button.on { background: var(--ink); color: #FFF; font-weight: 700; }
+#dock-admin { color: var(--ink3); text-decoration: none; font-size: 15px; padding: 0 4px; }
+#dock-close { border: 0; background: transparent; font-size: 16px; cursor: pointer; color: var(--ink3); padding: 0 4px; }
+.d-path { display: block; padding: 2px 12px 6px; font-family: var(--mono); font-size: 11px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-bottom: 1px solid var(--line); }
+.d-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.d-body[hidden] { display: none; }
+.d-msgs { list-style: none; margin: 0; padding: 12px; flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; background: var(--stage); }
+.d-empty { margin: auto; text-align: center; color: var(--ink3); font-size: 13px; }
+.d-msg { max-width: 88%; }
+.d-msg.me { align-self: flex-end; }
+.d-msg.them { align-self: flex-start; }
+.d-msg .b { padding: 8px 12px; border-radius: 12px; font-size: 13px; white-space: pre-wrap; word-break: break-word; }
+.d-msg.me .b { background: var(--ink); color: #FFF; border-bottom-right-radius: 3px; }
+.d-msg.them .b { background: #FFF; border: 1px solid var(--line); border-bottom-left-radius: 3px; }
+.d-msg.them.q .b { border-color: var(--ask); background: var(--ask-bg); }
+.d-msg.them.q .b::before { content: "❓ "; }
+.d-msg.them.fail .b { border-color: var(--ask); }
+.d-msg .typing { animation: o-pulse 1.2s ease-in-out infinite; }
+.d-msg .m { display: flex; gap: 6px; align-items: center; margin: 3px 4px 0; font-size: 11px; color: var(--ink3); }
+.d-msg.me .m { justify-content: flex-end; }
+.d-msg .m button { min-height: 20px; padding: 0 6px; font-size: 11px; border: 1px solid var(--line); border-radius: 4px; background: #FFF; cursor: pointer; }
+.d-chip { padding: 0 6px; border-radius: 4px; background: #EEF1EF; color: #44504A; }
+.d-chip.running { background: var(--work-bg); color: var(--work); }
+.d-chip.done { background: var(--sub-bg); color: var(--sub); }
+.d-chip.failed, .d-chip.error { background: var(--ask-bg); color: var(--ask); }
+.d-msg pre { margin: 6px 0 0; padding: 8px; background: #1E2622; color: #DDE5E0; border-radius: 6px; font-family: var(--mono); font-size: 11px; max-height: 200px; overflow: auto; white-space: pre-wrap; }
+.d-composer { padding: 8px 12px 10px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; }
+.d-composer textarea { width: 100%; min-height: 60px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; font: 14px/1.4 var(--sans); color: var(--ink); resize: vertical; }
+.d-composer textarea:focus, #dock select:focus, #dock input:focus { outline: 2px solid var(--sub); outline-offset: -1px; }
+.d-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#dock select, #dock input[type=text] { min-height: 28px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; font: 12px var(--sans); color: var(--ink); background: #FFF; }
+#dock .d-row > input[type=text] { flex: 1; }
+.d-check { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink2); }
+#dock-send { margin-left: auto; min-height: 32px; padding: 4px 16px; border: 0; border-radius: 6px; background: var(--ink); color: #FFF; font-weight: 700; font-size: 13px; cursor: pointer; }
+#dock-send:disabled { opacity: .5; }
+#dock-morning, #dock-wrapup { flex: 1; min-height: 28px; border: 1px solid var(--line); border-radius: 6px; background: #FFF; font-size: 12px; cursor: pointer; }
+.d-status { font-size: 12px; color: var(--ink3); min-height: 14px; }
+.d-status.err { color: var(--ask); font-weight: 600; }
+#dock-today { padding: 10px 12px; gap: 8px; overflow: auto; }
+#dock-today h3 { margin: 0; font-size: 14px; display: flex; gap: 6px; align-items: baseline; }
+#dock-today h3 small, #dock-today h4 { margin: 4px 0 0; font-size: 12px; color: var(--ink3); font-weight: 600; }
+.d-jlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.d-jlist li { display: grid; grid-template-columns: auto auto 1fr; gap: 6px; align-items: baseline; font-size: 12px; padding: 3px 4px; border-radius: 4px; }
+.d-jlist li time { font-family: var(--mono); color: var(--ink3); }
+.d-jlist li .k { font-size: 11px; padding: 0 5px; border-radius: 3px; background: #EEF1EF; color: #44504A; }
+.d-jlist li .k.activity { background: var(--work-bg); color: var(--work); }
+.d-jlist li .k.question { background: var(--ask-bg); color: var(--ask); }
+.d-jlist li .k.todo { background: var(--sub-bg); color: var(--sub); }
+.d-jlist li.done { opacity: .5; text-decoration: line-through; }
+.d-jlist li.clickable { cursor: pointer; }
+.d-jlist li.clickable:hover { background: var(--soft); }
+.d-brief { margin: 0; padding: 8px; background: #FFF8E8; border: 1px solid #F0D9A8; border-radius: 6px; font: 12px/1.45 var(--sans); white-space: pre-wrap; }
+.d-notice { position: fixed; right: 16px; bottom: 16px; z-index: 50; max-width: 360px; padding: 10px 12px; background: #FFF; border: 1px solid #F0D9A8; border-left: 4px solid #D99A2B; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12); font-size: 12px; white-space: pre-wrap; cursor: pointer; }
+.d-notice b { display: block; margin-bottom: 4px; font-size: 13px; }
+@media (max-width: 899px) { #dock { width: auto; border-left: 0; border-top: 1px solid var(--line); } }
