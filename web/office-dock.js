@@ -155,7 +155,7 @@ const OfficeDock = (() => {
       const me = el("li", "d-msg me");
       const text = x.task.replace(/^먼저 이 폴더의 \.claude\/procedures\/(.+?)\.md 절차서를 읽어라[^\n]*\n*/, "📋 $1\n").trim();
       me.append(el("div", "b", text.length > 500 ? text.slice(0, 500) + "…" : text));
-      me.append(el("div", "m", local(x.startedAt) + (x.schedule ? " · ⏰" : "") + (x.replyTo ? " · ↩" : "")));
+      me.append(el("div", "m", local(x.startedAt) + (x.schedule ? " · ⏰" : "") + (x.replyTo ? " · ↩" : "") + (x.mode === "plan" ? " · " + t("gate.plan") : "")));
       box.append(me);
       const them = el("li", "d-msg them" + (x.question && !x.answeredBy ? " q" : "") + (x.status === "failed" || x.status === "error" ? " fail" : ""));
       let body = "";
@@ -170,6 +170,11 @@ const OfficeDock = (() => {
       const m = el("div", "m");
       m.append(el("span", `d-chip ${x.status}`, t("st." + x.status) + (x.status === "running" ? " " + elapsed(x.startedAt) : "")));
       if (x.question && x.answeredBy) m.append(el("span", null, "✓ " + t("dock.answered")));
+      // 승인 게이트 — 계획만 세운 업무가 끝났으면 한 번에 같은 계획을 실행
+      if (x.mode === "plan" && x.status === "done" && !x.question) {
+        if (x.answeredBy) m.append(el("span", null, t("gate.ran")));
+        else { const g = el("button", "gate", t("gate.run")); g.onclick = () => approve(x); m.append(g); }
+      }
       if (x.question && !x.answeredBy && x.status !== "running") { const r = el("button", null, t("dock.reply")); r.onclick = () => { D.replyTo = x.id; $("dock-input").placeholder = "↩ " + t("dock.reply"); $("dock-input").focus(); }; m.append(r); }
       const lg = el("button", null, D.showLog.has(x.id) ? t("dock.hide") : t("dock.log")); lg.onclick = () => { if (D.showLog.has(x.id)) D.showLog.delete(x.id); else D.showLog.add(x.id); renderChat(); }; m.append(lg);
       if (x.status === "running") { const s = el("button", null, t("dock.stop")); s.onclick = async () => { await post("/api/admin/task/stop", { id: x.id }); loadTasks(); }; m.append(s); }
@@ -206,6 +211,17 @@ const OfficeDock = (() => {
   function elapsed(iso) {
     const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
     return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+  }
+  async function approve(x) {
+    if (D.demo) { note(t("dock.demo"), true); return; }
+    const mode = $("dock-mode").value === "plan" ? "acceptEdits" : $("dock-mode").value;
+    note("…");
+    try {
+      const r = await post("/api/admin/task", { who: D.who.name, cwd: D.who.path, key: D.who.folder || "", task: t("gate.task"), mode, continueSession: true, replyTo: x.id });
+      const b = await r.json().catch(() => ({}));
+      if (!r.ok || !b.ok) throw new Error(b.error || String(r.status));
+      note(""); await loadTasks();
+    } catch (e) { note(e.message, true); alert(e.message); }
   }
   function note(msg, err) { const s = $("dock-status"); s.textContent = msg || ""; s.className = "d-status" + (err ? " err" : ""); }
 
